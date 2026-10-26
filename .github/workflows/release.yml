@@ -101,7 +101,7 @@ jobs:
         uses: actions/checkout@v4
         with:
           repository: XBDJ504764827/sws2-cs2menus
-          ref: develop
+          ref: main
           path: sws2-cs2menus
 
       - name: Setup .NET
