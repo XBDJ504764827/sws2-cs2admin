@@ -23,10 +23,14 @@
     <PackageReference Include="SwiftlyS2.CS2" Version="*" ExcludeAssets="runtime" PrivateAssets="all" />
   </ItemGroup>
 
+  <PropertyGroup>
+    <Sws2Cs2MenusContractsProject Condition="Exists('sws2-cs2menus/contracts/Sws2Cs2Menus.Contracts.csproj')">sws2-cs2menus/contracts/Sws2Cs2Menus.Contracts.csproj</Sws2Cs2MenusContractsProject>
+    <Sws2Cs2MenusContractsProject Condition="'$(Sws2Cs2MenusContractsProject)' == ''">../sws2-cs2menus/contracts/Sws2Cs2Menus.Contracts.csproj</Sws2Cs2MenusContractsProject>
+  </PropertyGroup>
+
   <ItemGroup>
     <ProjectReference Include="contracts/Sws2Cs2Admin.Contracts.csproj" Private="false" />
-    <ProjectReference Include="sws2-cs2menus/contracts/Sws2Cs2Menus.Contracts.csproj" Condition="Exists('sws2-cs2menus/contracts/Sws2Cs2Menus.Contracts.csproj')" Private="false" />
-    <ProjectReference Include="../sws2-cs2menus/contracts/Sws2Cs2Menus.Contracts.csproj" Condition="!Exists('sws2-cs2menus/contracts/Sws2Cs2Menus.Contracts.csproj')" Private="false" />
+    <ProjectReference Include="$(Sws2Cs2MenusContractsProject)" Private="false" />
   </ItemGroup>
 
   <ItemGroup>
@@ -47,15 +51,24 @@
              Properties="Configuration=$(Configuration)">
       <Output TaskParameter="TargetOutputs" ItemName="AdminContractsTargetPath" />
     </MSBuild>
+    <MSBuild Projects="$(Sws2Cs2MenusContractsProject)"
+             Targets="GetTargetPath"
+             Properties="Configuration=$(Configuration)">
+      <Output TaskParameter="TargetOutputs" ItemName="MenuContractsTargetPath" />
+    </MSBuild>
     <MakeDir Directories="$(OutDir)resources/exports" />
+    <Copy SourceFiles="@(AdminContractsTargetPath)" DestinationFolder="$(OutDir)" />
     <Copy SourceFiles="@(AdminContractsTargetPath)" DestinationFolder="$(OutDir)resources/exports" />
+    <Copy SourceFiles="@(MenuContractsTargetPath)" DestinationFolder="$(OutDir)" />
   </Target>
 
   <Target Name="CopyContracts" AfterTargets="Build" DependsOnTargets="PrepareContracts" />
 
   <Target Name="CreateZip" AfterTargets="Publish" DependsOnTargets="PrepareContracts">
     <MakeDir Directories="$(PublishDir)resources/exports" />
+    <Copy SourceFiles="@(AdminContractsTargetPath)" DestinationFolder="$(PublishDir)" />
     <Copy SourceFiles="@(AdminContractsTargetPath)" DestinationFolder="$(PublishDir)resources/exports" />
+    <Copy SourceFiles="@(MenuContractsTargetPath)" DestinationFolder="$(PublishDir)" />
 
     <ItemGroup>
       <PublishFiles Include="$(PublishDir)**\*.*" />
