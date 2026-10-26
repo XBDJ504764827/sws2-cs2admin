@@ -39,6 +39,8 @@
 csgo/addons/swiftlys2/plugins/
 └── sws2-cs2admin/
     ├── sws2-cs2admin.dll
+    ├── Sws2Cs2Admin.Contracts.dll
+    ├── Sws2Cs2Menus.Contracts.dll
     └── resources/
         ├── exports/Sws2Cs2Admin.Contracts.dll
         ├── templates/config.template.jsonc
