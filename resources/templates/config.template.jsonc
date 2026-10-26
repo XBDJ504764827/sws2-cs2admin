@@ -1,0 +1,35 @@
+{
+  "sws2-cs2admin": {
+    "Debug": false,
+    // Also accept admin nodes granted through SwiftlyS2's permissions.jsonc.
+    "UseSwiftlyPermissions": true,
+    // Fallback immunity for admins without a group/direct immunity.
+    "DefaultImmunity": 0,
+    "Bans": {
+      "CheckOnJoin": true,
+      // 0 = permanent
+      "DefaultDurationMinutes": 0,
+      // 0 = no limit
+      "MaxDurationMinutes": 525600,
+      "AllowUnban": true,
+      "KickMessage": "Banned: {0} ({1})"
+    },
+    "Comms": {
+      "EnforceGag": true,
+      "DefaultDurationMinutes": 30,
+      "MaxDurationMinutes": 0,
+      "ExpireCheckSeconds": 30
+    },
+    "Audit": {
+      "Enabled": true,
+      "RetentionDays": 30
+    },
+    "Menu": {
+      "PageSize": 5
+    },
+    "Notify": {
+      "OnlineAdmins": false,
+      "BroadcastBans": false
+    }
+  }
+}

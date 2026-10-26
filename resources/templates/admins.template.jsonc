@@ -1,0 +1,35 @@
+{
+  // Admins are keyed by SteamID. SteamID64, STEAM_0:X:Y and [U:1:account] are accepted.
+  "Admins": {
+    // "76561198000000000": {
+    //   "Name": "Server Owner",
+    //   "Groups": ["Owner"],
+    //   "Permissions": [],
+    //   "Immunity": 100
+    // }
+  },
+  "Groups": {
+    "Owner": {
+      "Immunity": 100,
+      "Permissions": ["sws2.admin.*"]
+    },
+    "Moderator": {
+      "Immunity": 50,
+      "Permissions": [
+        "sws2.admin.menu",
+        "sws2.admin.kick",
+        "sws2.admin.slay",
+        "sws2.admin.slap",
+        "sws2.admin.respawn",
+        "sws2.admin.freeze",
+        "sws2.admin.mute",
+        "sws2.admin.gag",
+        "sws2.admin.silence",
+        "sws2.admin.ban",
+        "sws2.admin.unban",
+        "sws2.admin.bans.view",
+        "sws2.admin.who"
+      ]
+    }
+  }
+}
