@@ -68,4 +68,7 @@ public static class AdminPermissions
 
     /// <summary>Ignore immunity checks when targeting another admin.</summary>
     public const string ImmunityBypass = "sws2.admin.immunity.bypass";
+
+    /// <summary>Change the server map.</summary>
+    public const string MapChange = "sws2.admin.map.change";
 }

@@ -28,6 +28,9 @@ public sealed class AdminSettings
 
     /// <summary>Admin notification settings.</summary>
     public AdminNotifySettings Notify { get; set; } = new();
+
+    /// <summary>Map management settings.</summary>
+    public AdminMapSettings Maps { get; set; } = new();
 }
 
 /// <summary>
@@ -100,4 +103,16 @@ public sealed class AdminNotifySettings
 
     /// <summary>Announce bans to everyone.</summary>
     public bool BroadcastBans { get; set; }
+
+    /// <summary>Announce map changes to everyone.</summary>
+    public bool BroadcastMapChanges { get; set; } = true;
+}
+
+/// <summary>
+/// Map management settings.
+/// </summary>
+public sealed class AdminMapSettings
+{
+    /// <summary>List of available maps for the map management menu.</summary>
+    public IReadOnlyList<string> Available { get; set; } = [];
 }

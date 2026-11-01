@@ -24,6 +24,7 @@ public partial class Sws2Cs2Admin : BasePlugin
     private BanService _bans = null!;
     private CommService _comms = null!;
     private AdminActionService _actions = null!;
+    private MapListService _maps = null!;
     private MenuServiceContract? _menus;
     private ServiceProvider _provider = null!;
     private IDisposable? _configSubscription;
@@ -63,6 +64,7 @@ public partial class Sws2Cs2Admin : BasePlugin
         _comms = new CommService(Core, commStore, _admins, _audit, _settings);
         _comms.Start();
         _actions = new AdminActionService(Core, _admins, _audit, _comms, _bans, _settings);
+        _maps = new MapListService(Core, _settings);
 
         _configSubscription = options.OnChange(newSettings =>
         {
@@ -105,6 +107,13 @@ public partial class Sws2Cs2Admin : BasePlugin
         interfaceManager.AddSharedInterface<IAdminService, AdminService>(
             AdminServiceConstants.InterfaceKey,
             _admins);
+
+        if (_maps != null)
+        {
+            interfaceManager.AddSharedInterface<IMapListService, MapListService>(
+                IMapListService.InterfaceKey,
+                _maps);
+        }
     }
 
     public override void UseSharedInterface(IInterfaceManager interfaceManager)
@@ -132,6 +141,7 @@ public partial class Sws2Cs2Admin : BasePlugin
         _configSubscription = null;
 
         _menus = null;
+        _maps = null!;
         _actions?.Reset();
         _comms?.Dispose();
         _admins?.Shutdown();

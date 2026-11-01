@@ -27,9 +27,24 @@
     "Menu": {
       "PageSize": 5
     },
+    "Maps": {
+      // Map list for the map management menu. Other plugins can query this through IMapListService.
+      // Supports map names and Workshop IDs.
+      "Available": [
+        "de_dust2",
+        "de_inferno",
+        "de_mirage",
+        "de_ancient",
+        "de_nuke",
+        "de_anubis",
+        "de_overpass"
+      ]
+    },
     "Notify": {
       "OnlineAdmins": false,
-      "BroadcastBans": false
+      "BroadcastBans": false,
+      // Show map changes to everyone.
+      "BroadcastMapChanges": true
     }
   }
 }
