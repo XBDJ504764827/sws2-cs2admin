@@ -11,7 +11,6 @@
     <RootNamespace>Sws2Cs2Admin</RootNamespace>
     <OutputPath>$(MSBuildThisFileDirectory)build/</OutputPath>
     <PublishDir>$(OutputPath)publish/sws2-cs2admin</PublishDir>
-    <SatelliteResourceLanguages>en</SatelliteResourceLanguages>
   </PropertyGroup>
 
   <ItemGroup>
