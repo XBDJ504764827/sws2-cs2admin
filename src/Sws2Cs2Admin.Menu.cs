@@ -347,7 +347,7 @@ public partial class Sws2Cs2Admin
             try
             {
                 _maps.ChangeMap(mapName);
-                
+
                 if (_settings.Notify.BroadcastMapChanges)
                 {
                     var successMessage = $"{localizer["cs2admin.prefix"]} {localizer["cs2admin.action.map.success", mapName]}";
