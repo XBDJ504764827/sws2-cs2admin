@@ -116,5 +116,6 @@
   "cs2admin.action.ban.confirm": "封禁 {0}?",
   "cs2admin.action.map.confirm": "更换地图至 {0}?",
   "cs2admin.action.map.changing": "即将更换地图...",
+  "cs2admin.action.map.countdown": "将在 {1} 秒后更换地图至 {0}。",
   "cs2admin.action.map.success": "已将地图更换至 {0}。"
 }

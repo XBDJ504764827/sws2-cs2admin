@@ -116,5 +116,6 @@
   "cs2admin.action.ban.confirm": "Ban {0}?",
   "cs2admin.action.map.confirm": "Change map to {0}?",
   "cs2admin.action.map.changing": "Changing map...",
+  "cs2admin.action.map.countdown": "Changing map to {0} in {1} second(s).",
   "cs2admin.action.map.success": "Map changed to {0}."
 }

@@ -129,7 +129,9 @@ public partial class Sws2Cs2Admin
             .Id("kick")
             .Text(localizer["cs2admin.menu.action.kick"])
             .Permission(AdminPermissions.Kick)
-            .SubMenu(BuildKickConfirmMenu(admin, actor, target, localizer)));
+            .OnSelected(context => context.Service.OpenSubMenu(
+                context.Player,
+                BuildKickConfirmMenu(admin, actor, target, localizer))));
 
         builder.AddOption(option => option
             .Id("slay")
@@ -181,15 +183,18 @@ public partial class Sws2Cs2Admin
             .Id("ban")
             .Text(localizer["cs2admin.menu.action.ban"])
             .Permission(AdminPermissions.Ban)
-            .SubMenu(BuildBanDurationMenu(admin, actor, target, localizer)));
+            .OnSelected(context => context.Service.OpenSubMenu(
+                context.Player,
+                BuildBanDurationMenu(admin, actor, target, localizer))));
 
         return builder.Build();
     }
 
     private IMenuDefinition BuildKickConfirmMenu(IPlayer admin, AdminActor actor, IPlayer target, ILocalizer localizer)
     {
-        var builder = _menus!.CreateMenu($"{localizer["cs2admin.menu.action.kick"]}: {target.Name}")
+        var builder = _menus!.CreateMenu(localizer["cs2admin.action.kick.confirm", target.Name])
             .Id($"admin.kick.confirm.{admin.PlayerID}.{target.PlayerID}")
+            .Comment($"{target.Name} | #{target.PlayerID}")
             .PageSize(_settings.Menu.PageSize)
             .ShowBack()
             .ShowClose()
@@ -247,7 +252,9 @@ public partial class Sws2Cs2Admin
             .Id($"duration-{id}")
             .Text(localizer[$"cs2admin.menu.duration.{id}"])
             .Permission(AdminPermissions.Ban)
-            .SubMenu(BuildBanConfirmMenu(admin, actor, target, localizer, duration)));
+            .OnSelected(context => context.Service.OpenSubMenu(
+                context.Player,
+                BuildBanConfirmMenu(admin, actor, target, localizer, duration))));
     }
 
     private IMenuDefinition BuildBanConfirmMenu(
@@ -257,8 +264,10 @@ public partial class Sws2Cs2Admin
         ILocalizer localizer,
         TimeSpan? duration)
     {
-        var builder = _menus!.CreateMenu($"{localizer["cs2admin.menu.action.ban"]}: {target.Name}")
+        var durationText = FormatMenuBanDuration(duration, localizer);
+        var builder = _menus!.CreateMenu(localizer["cs2admin.action.ban.confirm", target.Name])
             .Id($"admin.ban.confirm.{admin.PlayerID}.{target.PlayerID}.{duration?.TotalMinutes ?? 0}")
+            .Comment($"{target.Name} | {durationText}")
             .PageSize(_settings.Menu.PageSize)
             .ShowBack()
             .ShowClose()
@@ -303,7 +312,9 @@ public partial class Sws2Cs2Admin
                 .Id($"map-{map}")
                 .Text(map)
                 .Permission(AdminPermissions.MapChange)
-                .SubMenu(BuildMapConfirmMenu(admin, actor, map, localizer)));
+                .OnSelected(context => context.Service.OpenSubMenu(
+                    context.Player,
+                    BuildMapConfirmMenu(admin, actor, map, localizer))));
         }
 
         return builder.Build();
@@ -311,8 +322,9 @@ public partial class Sws2Cs2Admin
 
     private IMenuDefinition BuildMapConfirmMenu(IPlayer admin, AdminActor actor, string mapName, ILocalizer localizer)
     {
-        var builder = _menus!.CreateMenu($"{localizer["cs2admin.menu.action.map.confirm"]}")
+        var builder = _menus!.CreateMenu(localizer["cs2admin.action.map.confirm", mapName])
             .Id($"admin.map.confirm.{admin.PlayerID}.{mapName}")
+            .Comment(mapName)
             .PageSize(_settings.Menu.PageSize)
             .ShowBack()
             .ShowClose()
@@ -322,7 +334,7 @@ public partial class Sws2Cs2Admin
             .Id("confirm")
             .Text(localizer["cs2admin.menu.action.map.confirm"])
             .Permission(AdminPermissions.MapChange)
-            .OnSelected(context => ChangeMapWithCountdown(actor, mapName, localizer)));
+            .OnSelected(context => ChangeMapWithCountdown(mapName)));
 
         builder.AddOption(option => option
             .Id("cancel")
@@ -332,40 +344,47 @@ public partial class Sws2Cs2Admin
         return builder.Build();
     }
 
-    private void ChangeMapWithCountdown(AdminActor actor, string mapName, ILocalizer localizer)
+    private void ChangeMapWithCountdown(string mapName)
     {
-        var countdown = 3;
-        var message = $"{localizer["cs2admin.prefix"]} {localizer["cs2admin.action.map.changing"]}";
+        BroadcastMapCountdown(mapName, 3);
+    }
 
+    private void BroadcastMapCountdown(string mapName, int secondsRemaining)
+    {
         foreach (var player in Core.PlayerManager.GetAllValidPlayers())
         {
-            player.SendChat(message);
+            var playerLocalizer = Core.Translation.GetPlayerLocalizer(player);
+            player.SendChat($"{playerLocalizer["cs2admin.prefix"]} {playerLocalizer["cs2admin.action.map.countdown", mapName, secondsRemaining]}");
         }
 
-        Core.Scheduler.DelayBySeconds(countdown, () =>
+        if (secondsRemaining <= 1)
         {
-            try
-            {
-                _maps.ChangeMap(mapName);
+            Core.Scheduler.DelayBySeconds(1, () => ExecuteMapChange(mapName));
+            return;
+        }
 
-                if (_settings.Notify.BroadcastMapChanges)
-                {
-                    var successMessage = $"{localizer["cs2admin.prefix"]} {localizer["cs2admin.action.map.success", mapName]}";
-                    foreach (var player in Core.PlayerManager.GetAllValidPlayers())
-                    {
-                        player.SendChat(successMessage);
-                    }
-                }
-            }
-            catch (Exception ex)
+        Core.Scheduler.DelayBySeconds(1, () => BroadcastMapCountdown(mapName, secondsRemaining - 1));
+    }
+
+    private void ExecuteMapChange(string mapName)
+    {
+        try
+        {
+            _maps.ChangeMap(mapName);
+
+            if (_settings.Notify.BroadcastMapChanges)
             {
-                Core.Logger.LogError(ex, "[sws2-cs2admin] Failed to change map to {Map}", mapName);
-                if (actor.Player != null)
+                foreach (var player in Core.PlayerManager.GetAllValidPlayers())
                 {
-                    actor.Player.SendChat($"{localizer["cs2admin.prefix"]} Error changing map: {ex.Message}");
+                    var playerLocalizer = Core.Translation.GetPlayerLocalizer(player);
+                    player.SendChat($"{playerLocalizer["cs2admin.prefix"]} {playerLocalizer["cs2admin.action.map.success", mapName]}");
                 }
             }
-        });
+        }
+        catch (Exception ex)
+        {
+            Core.Logger.LogError(ex, "[sws2-cs2admin] Failed to change map to {Map}", mapName);
+        }
     }
 
     private IMenuDefinition BuildBansMenu(IPlayer admin, AdminActor actor, ILocalizer localizer)
@@ -469,6 +488,30 @@ public partial class Sws2Cs2Admin
     private bool HasAnyPermission(IPlayer player, params string[] nodes)
     {
         return nodes.Any(node => _admins.HasPermission(player.SteamID, node));
+    }
+
+    private string FormatMenuBanDuration(TimeSpan? duration, ILocalizer localizer)
+    {
+        if (duration is null)
+        {
+            return localizer["cs2admin.menu.duration.perm"];
+        }
+
+        var durationKey = duration.Value.TotalSeconds switch
+        {
+            30 => "30s",
+            60 => "60s",
+            3600 => "1h",
+            86400 => "1d",
+            259200 => "3d",
+            604800 => "7d",
+            2592000 => "30d",
+            _ => null
+        };
+
+        return durationKey is null
+            ? DurationParser.Format(duration)
+            : localizer[$"cs2admin.menu.duration.{durationKey}"];
     }
 
     private string FormatBanExpiry(BanRecord ban, ILocalizer localizer)
