@@ -4,6 +4,10 @@ All notable changes to this project are documented in this file.
 
 ## [Unreleased]
 
+### Fixed
+
+- Close the Simplified Chinese translation JSON after adding the missing-map message.
+
 ## [1.0.0] - 2026-10-26
 
 ### Added

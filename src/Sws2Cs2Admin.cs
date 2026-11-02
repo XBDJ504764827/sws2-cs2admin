@@ -8,6 +8,7 @@ using SwiftlyS2.Shared.Plugins;
 using Sws2Cs2Admin.Configuration;
 using Sws2Cs2Admin.Contracts;
 using Sws2Cs2Admin.Services;
+using Sws2Cs2MapManager.Contracts;
 using Sws2Cs2Menus.Contracts;
 using MenuServiceContract = Sws2Cs2Menus.Contracts.IMenuService;
 
@@ -25,6 +26,7 @@ public partial class Sws2Cs2Admin : BasePlugin
     private CommService _comms = null!;
     private AdminActionService _actions = null!;
     private MenuServiceContract? _menus;
+    private IMapManagerService? _mapManager;
     private ServiceProvider _provider = null!;
     private IDisposable? _configSubscription;
 
@@ -115,6 +117,23 @@ public partial class Sws2Cs2Admin : BasePlugin
         {
             _menus = menus;
         }
+
+        if (_mapManager is not null)
+        {
+            _mapManager.MapChangeProgressed -= OnMapChangeProgressed;
+        }
+
+        if (interfaceManager.TryGetSharedInterface<IMapManagerService>(
+                IMapManagerService.InterfaceKey,
+                out var mapManager))
+        {
+            _mapManager = mapManager;
+            _mapManager.MapChangeProgressed += OnMapChangeProgressed;
+        }
+        else
+        {
+            _mapManager = null;
+        }
     }
 
     public override void Unload()
@@ -132,6 +151,12 @@ public partial class Sws2Cs2Admin : BasePlugin
         _configSubscription = null;
 
         _menus = null;
+        if (_mapManager is not null)
+        {
+            _mapManager.MapChangeProgressed -= OnMapChangeProgressed;
+        }
+
+        _mapManager = null;
         _actions?.Reset();
         _comms?.Dispose();
         _admins?.Shutdown();

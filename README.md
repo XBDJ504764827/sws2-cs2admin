@@ -21,6 +21,7 @@
 - JSONL audit logging for successful and denied admin actions
 - Admin panel built on the shared [`sws2-cs2menus`](https://github.com/XBDJ504764827/sws2-cs2menus) service
 - Shared `IAdminService` contract so Whitelist, RTV and other plugins can reuse admin permission checks
+- Map administration delegated to [`sws2-cs2mapmanager`](https://github.com/XBDJ504764827/sws2-cs2mapmanager), including Workshop-aware changes
 - Hot-reloadable `config.jsonc`
 - Translations: English, 简体中文
 
@@ -28,6 +29,8 @@
 
 - [SwiftlyS2](https://github.com/swiftly-solution/swiftlys2) **1.5.0 or newer**
 - [sws2-cs2menus](https://github.com/XBDJ504764827/sws2-cs2menus) (required; provides the shared menu contracts and admin panel service)
+- [sws2-cs2mapmanager](https://github.com/XBDJ504764827/sws2-cs2mapmanager) (required for map management; provides shared map catalog and Workshop-aware changes)
+- MultiAddonManager (required when using map manager Workshop download support)
 - .NET 10 SDK (only needed to build from source)
 
 ## Installation
@@ -41,6 +44,7 @@ csgo/addons/swiftlys2/plugins/
     ├── sws2-cs2admin.dll
     ├── Sws2Cs2Admin.Contracts.dll
     ├── Sws2Cs2Menus.Contracts.dll
+    ├── Sws2Cs2MapManager.Contracts.dll
     └── resources/
         ├── exports/Sws2Cs2Admin.Contracts.dll
         ├── templates/config.template.jsonc
@@ -48,7 +52,7 @@ csgo/addons/swiftlys2/plugins/
         └── translations/
 ```
 
-3. Install `sws2-cs2menus` as well, then start or reload the server, or run `sw plugins load sws2-cs2menus` and `sw plugins load sws2-cs2admin`.
+3. Install `sws2-cs2menus` and `sws2-cs2mapmanager` as well, then start or reload the server. Load the shared service plugins before `sws2-cs2admin`.
 
 The first load creates:
 
@@ -59,6 +63,10 @@ csgo/addons/swiftlys2/configs/plugins/sws2-cs2admin/
 ```
 
 Add your SteamID and groups to `admins.jsonc`, then run `!reloadadmins` or reload the plugin.
+
+## Map administration
+
+The admin menu reads its map catalog from `sws2-cs2mapmanager`. Configure local maps and Workshop IDs in that plugin's `config.jsonc`; this keeps one list available to admin actions and future RTV voting. Install MultiAddonManager on the server to enable automatic Workshop downloads. The admin menu confirms the selected map, announces a 3-second countdown, then asks mapmanager to switch or download it.
 
 ## Configuration
 
