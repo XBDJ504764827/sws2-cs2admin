@@ -391,10 +391,11 @@ public partial class Sws2Cs2Admin
                 ReplyMapChange(admin, adminLocalizer, "cs2admin.action.map.busy");
                 break;
             case MapChangeRequestStatus.MapNotFound:
+                ReplyMapChange(admin, adminLocalizer, "cs2admin.action.map.not_found");
+                break;
             case MapChangeRequestStatus.InvalidMap:
             case MapChangeRequestStatus.WorkshopDownloadDisabled:
             case MapChangeRequestStatus.Failed:
-                ReplyMapChange(admin, adminLocalizer, "cs2admin.action.map.failed", result.Error ?? map.Name);
                 break;
             default:
                 ReplyMapChange(admin, adminLocalizer, "cs2admin.action.map.failed", map.Name);

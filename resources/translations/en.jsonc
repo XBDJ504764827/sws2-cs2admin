@@ -121,6 +121,7 @@
   "cs2admin.action.map.download_pending": "A download for {0} is already in progress.",
   "cs2admin.action.map.busy": "Another map change is already in progress.",
   "cs2admin.action.map.failed": "Map change failed: {0}.",
+  "cs2admin.action.map.not_found": "That map is no longer in the configured map list.",
   "cs2admin.menu.mapmanager.unavailable": "Map manager is not loaded.",
   "cs2admin.action.map.success": "Map changed to {0}."
 }

@@ -121,6 +121,7 @@
   "cs2admin.action.map.download_pending": "地图 {0} 已在下载中。",
   "cs2admin.action.map.busy": "已有地图切换正在进行。",
   "cs2admin.action.map.failed": "地图切换失败：{0}。",
+  "cs2admin.action.map.not_found": "该地图已不在当前地图列表中。",",
   "cs2admin.menu.mapmanager.unavailable": "地图管理器插件未加载。",
   "cs2admin.action.map.success": "已将地图更换至 {0}。"
 }
