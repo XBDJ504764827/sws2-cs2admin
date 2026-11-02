@@ -114,5 +114,14 @@ public sealed class AdminNotifySettings
 public sealed class AdminMapSettings
 {
     /// <summary>List of available maps for the map management menu.</summary>
-    public IReadOnlyList<string> Available { get; set; } = [];
+    public IReadOnlyList<string> Available { get; set; } =
+    [
+        "de_dust2",
+        "de_inferno",
+        "de_mirage",
+        "de_ancient",
+        "de_nuke",
+        "de_anubis",
+        "de_overpass"
+    ];
 }

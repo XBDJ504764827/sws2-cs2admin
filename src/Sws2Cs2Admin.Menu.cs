@@ -37,15 +37,11 @@ public partial class Sws2Cs2Admin
                 .SubMenu(BuildPlayersMenu(admin, actor, localizer)));
         }
 
-        if (_settings.Maps.Available.Count > 0 && _admins.HasPermission(admin.SteamID, AdminPermissions.MapChange))
-        {
-            builder.AddOption(option => option
-                .Id("maps")
-                .Text(localizer["cs2admin.menu.maps"])
-                .Comment(localizer["cs2admin.menu.maps.comment"])
-                .Permission(AdminPermissions.MapChange)
-                .SubMenu(BuildMapsMenu(admin, actor, localizer)));
-        }
+        builder.AddOption(option => option
+            .Id("maps")
+            .Text(localizer["cs2admin.menu.maps"])
+            .Comment(localizer["cs2admin.menu.maps.comment"])
+            .SubMenu(BuildMapsMenu(admin, actor, localizer)));
 
         builder.AddOption(option => option
             .Id("bans")
@@ -311,7 +307,6 @@ public partial class Sws2Cs2Admin
             builder.AddOption(option => option
                 .Id($"map-{map}")
                 .Text(map)
-                .Permission(AdminPermissions.MapChange)
                 .OnSelected(context => context.Service.OpenSubMenu(
                     context.Player,
                     BuildMapConfirmMenu(admin, actor, map, localizer))));
@@ -333,7 +328,6 @@ public partial class Sws2Cs2Admin
         builder.AddOption(option => option
             .Id("confirm")
             .Text(localizer["cs2admin.menu.action.map.confirm"])
-            .Permission(AdminPermissions.MapChange)
             .OnSelected(context => ChangeMapWithCountdown(mapName)));
 
         builder.AddOption(option => option

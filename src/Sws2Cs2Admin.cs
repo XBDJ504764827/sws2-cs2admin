@@ -81,6 +81,7 @@ public partial class Sws2Cs2Admin : BasePlugin
                 _bans.ApplySettings(newSettings);
                 _comms.ApplySettings(newSettings);
                 _actions.ApplySettings(newSettings);
+                _maps.ApplySettings(newSettings);
 
                 Core.Logger.LogInformation("[sws2-cs2admin] Configuration reloaded");
             });

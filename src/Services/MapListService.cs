@@ -12,7 +12,7 @@ internal sealed class MapListService : IMapListService
 {
     private readonly ISwiftlyCore _core;
     private readonly ILogger _logger;
-    private readonly AdminSettings _settings;
+    private AdminSettings _settings;
 
     public MapListService(ISwiftlyCore core, AdminSettings settings)
     {
@@ -21,9 +21,18 @@ internal sealed class MapListService : IMapListService
         _settings = settings;
     }
 
+    public void ApplySettings(AdminSettings settings)
+    {
+        _settings = settings;
+    }
+
     public IReadOnlyList<string> GetAvailableMaps()
     {
-        return _settings.Maps.Available.ToList();
+        return _settings.Maps.Available
+            .Where(map => !string.IsNullOrWhiteSpace(map))
+            .Select(map => map.Trim())
+            .Distinct(StringComparer.OrdinalIgnoreCase)
+            .ToArray();
     }
 
     public void ChangeMap(string mapName)
