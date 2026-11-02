@@ -11,6 +11,8 @@ Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Sws2Cs2Admin.Contracts", "c
 EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Sws2Cs2Menus.Contracts", "..\sws2-cs2menus\contracts\Sws2Cs2Menus.Contracts.csproj", "{0D137506-1C5C-4C78-A0AC-853629903D2C}"
 EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Sws2Cs2MapManager.Contracts", "..\sws2-cs2mapmanager\contracts\Sws2Cs2MapManager.Contracts.csproj", "{C0CDEC55-19FA-4906-99FB-9B8AF7F520F8}"
+EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
 		Debug|Any CPU = Debug|Any CPU
@@ -57,6 +59,18 @@ Global
 		{0D137506-1C5C-4C78-A0AC-853629903D2C}.Release|x64.Build.0 = Release|Any CPU
 		{0D137506-1C5C-4C78-A0AC-853629903D2C}.Release|x86.ActiveCfg = Release|Any CPU
 		{0D137506-1C5C-4C78-A0AC-853629903D2C}.Release|x86.Build.0 = Release|Any CPU
+		{C0CDEC55-19FA-4906-99FB-9B8AF7F520F8}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{C0CDEC55-19FA-4906-99FB-9B8AF7F520F8}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{C0CDEC55-19FA-4906-99FB-9B8AF7F520F8}.Debug|x64.ActiveCfg = Debug|Any CPU
+		{C0CDEC55-19FA-4906-99FB-9B8AF7F520F8}.Debug|x64.Build.0 = Debug|Any CPU
+		{C0CDEC55-19FA-4906-99FB-9B8AF7F520F8}.Debug|x86.ActiveCfg = Debug|Any CPU
+		{C0CDEC55-19FA-4906-99FB-9B8AF7F520F8}.Debug|x86.Build.0 = Debug|Any CPU
+		{C0CDEC55-19FA-4906-99FB-9B8AF7F520F8}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{C0CDEC55-19FA-4906-99FB-9B8AF7F520F8}.Release|Any CPU.Build.0 = Release|Any CPU
+		{C0CDEC55-19FA-4906-99FB-9B8AF7F520F8}.Release|x64.ActiveCfg = Release|Any CPU
+		{C0CDEC55-19FA-4906-99FB-9B8AF7F520F8}.Release|x64.Build.0 = Release|Any CPU
+		{C0CDEC55-19FA-4906-99FB-9B8AF7F520F8}.Release|x86.ActiveCfg = Release|Any CPU
+		{C0CDEC55-19FA-4906-99FB-9B8AF7F520F8}.Release|x86.Build.0 = Release|Any CPU
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE

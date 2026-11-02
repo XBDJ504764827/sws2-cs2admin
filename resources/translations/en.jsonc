@@ -115,7 +115,12 @@
   "cs2admin.action.kick.confirm": "Kick {0}?",
   "cs2admin.action.ban.confirm": "Ban {0}?",
   "cs2admin.action.map.confirm": "Change map to {0}?",
-  "cs2admin.action.map.changing": "Changing map...",
   "cs2admin.action.map.countdown": "Changing map to {0} in {1} second(s).",
+  "cs2admin.action.map.change_started": "Changing map to {0}.",
+  "cs2admin.action.map.download_started": "Downloading Workshop map {0}; the server will change when it is ready.",
+  "cs2admin.action.map.download_pending": "A download for {0} is already in progress.",
+  "cs2admin.action.map.busy": "Another map change is already in progress.",
+  "cs2admin.action.map.failed": "Map change failed: {0}.",
+  "cs2admin.menu.mapmanager.unavailable": "Map manager is not loaded.",
   "cs2admin.action.map.success": "Map changed to {0}."
 }

@@ -28,11 +28,14 @@
   <PropertyGroup>
     <Sws2Cs2MenusContractsProject Condition="Exists('sws2-cs2menus/contracts/Sws2Cs2Menus.Contracts.csproj')">sws2-cs2menus/contracts/Sws2Cs2Menus.Contracts.csproj</Sws2Cs2MenusContractsProject>
     <Sws2Cs2MenusContractsProject Condition="'$(Sws2Cs2MenusContractsProject)' == ''">../sws2-cs2menus/contracts/Sws2Cs2Menus.Contracts.csproj</Sws2Cs2MenusContractsProject>
+    <Sws2Cs2MapManagerContractsProject Condition="Exists('sws2-cs2mapmanager/contracts/Sws2Cs2MapManager.Contracts.csproj')">sws2-cs2mapmanager/contracts/Sws2Cs2MapManager.Contracts.csproj</Sws2Cs2MapManagerContractsProject>
+    <Sws2Cs2MapManagerContractsProject Condition="'$(Sws2Cs2MapManagerContractsProject)' == ''">../sws2-cs2mapmanager/contracts/Sws2Cs2MapManager.Contracts.csproj</Sws2Cs2MapManagerContractsProject>
   </PropertyGroup>
 
   <ItemGroup>
     <ProjectReference Include="contracts/Sws2Cs2Admin.Contracts.csproj" Private="false" />
     <ProjectReference Include="$(Sws2Cs2MenusContractsProject)" Private="false" />
+    <ProjectReference Include="$(Sws2Cs2MapManagerContractsProject)" Private="false" />
   </ItemGroup>
 
   <ItemGroup>
@@ -44,6 +47,7 @@
   <ItemGroup>
     <Compile Remove="contracts\**\*.cs" />
     <Compile Remove="sws2-cs2menus\**\*.cs" />
+    <Compile Remove="sws2-cs2mapmanager\**\*.cs" />
     <Compile Remove="examples\**\*.cs" />
   </ItemGroup>
 
@@ -58,10 +62,16 @@
              Properties="Configuration=$(Configuration)">
       <Output TaskParameter="TargetOutputs" ItemName="MenuContractsTargetPath" />
     </MSBuild>
+    <MSBuild Projects="$(Sws2Cs2MapManagerContractsProject)"
+             Targets="GetTargetPath"
+             Properties="Configuration=$(Configuration)">
+      <Output TaskParameter="TargetOutputs" ItemName="MapManagerContractsTargetPath" />
+    </MSBuild>
     <MakeDir Directories="$(OutDir)resources/exports" />
     <Copy SourceFiles="@(AdminContractsTargetPath)" DestinationFolder="$(OutDir)" />
     <Copy SourceFiles="@(AdminContractsTargetPath)" DestinationFolder="$(OutDir)resources/exports" />
     <Copy SourceFiles="@(MenuContractsTargetPath)" DestinationFolder="$(OutDir)" />
+    <Copy SourceFiles="@(MapManagerContractsTargetPath)" DestinationFolder="$(OutDir)" />
   </Target>
 
   <Target Name="CopyContracts" AfterTargets="Build" DependsOnTargets="PrepareContracts" />
@@ -71,6 +81,7 @@
     <Copy SourceFiles="@(AdminContractsTargetPath)" DestinationFolder="$(PublishDir)" />
     <Copy SourceFiles="@(AdminContractsTargetPath)" DestinationFolder="$(PublishDir)resources/exports" />
     <Copy SourceFiles="@(MenuContractsTargetPath)" DestinationFolder="$(PublishDir)" />
+    <Copy SourceFiles="@(MapManagerContractsTargetPath)" DestinationFolder="$(PublishDir)" />
 
     <ItemGroup>
       <PublishFiles Include="$(PublishDir)**\*.*" />

@@ -1,9 +1,9 @@
-using Microsoft.Extensions.Logging;
 using SwiftlyS2.Shared.Players;
 using SwiftlyS2.Shared.Translation;
 using Sws2Cs2Admin.Contracts;
 using Sws2Cs2Admin.Models;
 using Sws2Cs2Admin.Services;
+using Sws2Cs2MapManager.Contracts;
 using Sws2Cs2Menus.Contracts;
 
 namespace Sws2Cs2Admin;
@@ -41,7 +41,7 @@ public partial class Sws2Cs2Admin
             .Id("maps")
             .Text(localizer["cs2admin.menu.maps"])
             .Comment(localizer["cs2admin.menu.maps.comment"])
-            .SubMenu(BuildMapsMenu(admin, actor, localizer)));
+            .SubMenu(BuildMapsMenu(admin, localizer)));
 
         builder.AddOption(option => option
             .Id("bans")
@@ -283,7 +283,7 @@ public partial class Sws2Cs2Admin
         return builder.Build();
     }
 
-    private IMenuDefinition BuildMapsMenu(IPlayer admin, AdminActor actor, ILocalizer localizer)
+    private IMenuDefinition BuildMapsMenu(IPlayer admin, ILocalizer localizer)
     {
         var builder = _menus!.CreateMenu(localizer["cs2admin.menu.maps"])
             .Id($"admin.maps.{admin.PlayerID}")
@@ -292,7 +292,16 @@ public partial class Sws2Cs2Admin
             .ShowClose()
             .CloseOnSelect(false);
 
-        var maps = _maps.GetAvailableMaps();
+        if (_mapManager is null)
+        {
+            builder.AddOption(option => option
+                .Id("unavailable")
+                .Text(localizer["cs2admin.menu.mapmanager.unavailable"])
+                .Disabled());
+            return builder.Build();
+        }
+
+        var maps = _mapManager.GetMaps();
         if (maps.Count == 0)
         {
             builder.AddOption(option => option
@@ -305,21 +314,22 @@ public partial class Sws2Cs2Admin
         foreach (var map in maps)
         {
             builder.AddOption(option => option
-                .Id($"map-{map}")
-                .Text(map)
+                .Id($"map-{map.Id}")
+                .Text(map.Name)
+                .Comment(map.Kind == MapKind.Workshop ? $"Workshop ID: {map.Value}" : map.Value)
                 .OnSelected(context => context.Service.OpenSubMenu(
                     context.Player,
-                    BuildMapConfirmMenu(admin, actor, map, localizer))));
+                    BuildMapConfirmMenu(admin, map, localizer))));
         }
 
         return builder.Build();
     }
 
-    private IMenuDefinition BuildMapConfirmMenu(IPlayer admin, AdminActor actor, string mapName, ILocalizer localizer)
+    private IMenuDefinition BuildMapConfirmMenu(IPlayer admin, MapInfo map, ILocalizer localizer)
     {
-        var builder = _menus!.CreateMenu(localizer["cs2admin.action.map.confirm", mapName])
-            .Id($"admin.map.confirm.{admin.PlayerID}.{mapName}")
-            .Comment(mapName)
+        var builder = _menus!.CreateMenu(localizer["cs2admin.action.map.confirm", map.Name])
+            .Id($"admin.map.confirm.{admin.PlayerID}.{map.Id.Replace(':', '-')}")
+            .Comment(map.Kind == MapKind.Workshop ? $"Workshop ID: {map.Value}" : map.Value)
             .PageSize(_settings.Menu.PageSize)
             .ShowBack()
             .ShowClose()
@@ -328,7 +338,7 @@ public partial class Sws2Cs2Admin
         builder.AddOption(option => option
             .Id("confirm")
             .Text(localizer["cs2admin.menu.action.map.confirm"])
-            .OnSelected(context => ChangeMapWithCountdown(mapName)));
+            .OnSelected(context => ChangeMapWithCountdown(admin, map, localizer)));
 
         builder.AddOption(option => option
             .Id("cancel")
@@ -338,47 +348,96 @@ public partial class Sws2Cs2Admin
         return builder.Build();
     }
 
-    private void ChangeMapWithCountdown(string mapName)
+    private void ChangeMapWithCountdown(IPlayer admin, MapInfo map, ILocalizer localizer)
     {
-        BroadcastMapCountdown(mapName, 3);
+        BroadcastMapCountdown(admin, map, 3, localizer);
     }
 
-    private void BroadcastMapCountdown(string mapName, int secondsRemaining)
+    private void BroadcastMapCountdown(IPlayer admin, MapInfo map, int secondsRemaining, ILocalizer localizer)
     {
         foreach (var player in Core.PlayerManager.GetAllValidPlayers())
         {
             var playerLocalizer = Core.Translation.GetPlayerLocalizer(player);
-            player.SendChat($"{playerLocalizer["cs2admin.prefix"]} {playerLocalizer["cs2admin.action.map.countdown", mapName, secondsRemaining]}");
+            player.SendChat($"{playerLocalizer["cs2admin.prefix"]} {playerLocalizer["cs2admin.action.map.countdown", map.Name, secondsRemaining]}");
         }
 
         if (secondsRemaining <= 1)
         {
-            Core.Scheduler.DelayBySeconds(1, () => ExecuteMapChange(mapName));
+            Core.Scheduler.DelayBySeconds(1, () => RequestManagedMapChange(admin, map, localizer));
             return;
         }
 
-        Core.Scheduler.DelayBySeconds(1, () => BroadcastMapCountdown(mapName, secondsRemaining - 1));
+        Core.Scheduler.DelayBySeconds(1, () => BroadcastMapCountdown(admin, map, secondsRemaining - 1, localizer));
     }
 
-    private void ExecuteMapChange(string mapName)
+    private void RequestManagedMapChange(IPlayer admin, MapInfo map, ILocalizer adminLocalizer)
     {
-        try
+        if (_mapManager is null)
         {
-            _maps.ChangeMap(mapName);
+            ReplyMapChange(admin, adminLocalizer, "cs2admin.menu.mapmanager.unavailable");
+            return;
+        }
 
-            if (_settings.Notify.BroadcastMapChanges)
-            {
-                foreach (var player in Core.PlayerManager.GetAllValidPlayers())
-                {
-                    var playerLocalizer = Core.Translation.GetPlayerLocalizer(player);
-                    player.SendChat($"{playerLocalizer["cs2admin.prefix"]} {playerLocalizer["cs2admin.action.map.success", mapName]}");
-                }
-            }
-        }
-        catch (Exception ex)
+        var result = _mapManager.RequestChange(map.Id);
+        switch (result.Status)
         {
-            Core.Logger.LogError(ex, "[sws2-cs2admin] Failed to change map to {Map}", mapName);
+            case MapChangeRequestStatus.ChangeStarted:
+            case MapChangeRequestStatus.DownloadStarted:
+                break;
+            case MapChangeRequestStatus.DownloadAlreadyPending:
+                ReplyMapChange(admin, adminLocalizer, "cs2admin.action.map.download_pending", map.Name);
+                break;
+            case MapChangeRequestStatus.Busy:
+                ReplyMapChange(admin, adminLocalizer, "cs2admin.action.map.busy");
+                break;
+            case MapChangeRequestStatus.MapNotFound:
+            case MapChangeRequestStatus.InvalidMap:
+            case MapChangeRequestStatus.WorkshopDownloadDisabled:
+            case MapChangeRequestStatus.Failed:
+                ReplyMapChange(admin, adminLocalizer, "cs2admin.action.map.failed", result.Error ?? map.Name);
+                break;
+            default:
+                ReplyMapChange(admin, adminLocalizer, "cs2admin.action.map.failed", map.Name);
+                break;
         }
+    }
+
+    private void OnMapChangeProgressed(object? sender, MapChangeProgressEventArgs args)
+    {
+        var messageKey = args.Progress switch
+        {
+            MapChangeProgress.DownloadStarted => "cs2admin.action.map.download_started",
+            MapChangeProgress.ChangeIssued => "cs2admin.action.map.change_started",
+            MapChangeProgress.Failed => "cs2admin.action.map.failed",
+            _ => null
+        };
+
+        if (messageKey is not null)
+        {
+            BroadcastMapMessage(messageKey, args.Progress == MapChangeProgress.Failed
+                ? args.Error ?? args.Map.Name
+                : args.Map.Name);
+        }
+    }
+
+    private void BroadcastMapMessage(string key, string mapName)
+    {
+        foreach (var player in Core.PlayerManager.GetAllValidPlayers())
+        {
+            var localizer = Core.Translation.GetPlayerLocalizer(player);
+            player.SendChat($"{localizer["cs2admin.prefix"]} {localizer[key, mapName]}");
+        }
+    }
+
+    private void ReplyMapChange(IPlayer admin, ILocalizer localizer, string key, params object[] args)
+    {
+        if (!admin.IsValid)
+        {
+            return;
+        }
+
+        var message = args.Length == 0 ? localizer[key] : localizer[key, args];
+        admin.SendChat($"{localizer["cs2admin.prefix"]} {message}");
     }
 
     private IMenuDefinition BuildBansMenu(IPlayer admin, AdminActor actor, ILocalizer localizer)

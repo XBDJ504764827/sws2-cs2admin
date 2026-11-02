@@ -115,7 +115,12 @@
   "cs2admin.action.kick.confirm": "踢出 {0}?",
   "cs2admin.action.ban.confirm": "封禁 {0}?",
   "cs2admin.action.map.confirm": "更换地图至 {0}?",
-  "cs2admin.action.map.changing": "即将更换地图...",
   "cs2admin.action.map.countdown": "将在 {1} 秒后更换地图至 {0}。",
+  "cs2admin.action.map.change_started": "正在更换至地图 {0}。",
+  "cs2admin.action.map.download_started": "正在下载工坊地图 {0}，完成后服务器将自动切换。",
+  "cs2admin.action.map.download_pending": "地图 {0} 已在下载中。",
+  "cs2admin.action.map.busy": "已有地图切换正在进行。",
+  "cs2admin.action.map.failed": "地图切换失败：{0}。",
+  "cs2admin.menu.mapmanager.unavailable": "地图管理器插件未加载。",
   "cs2admin.action.map.success": "已将地图更换至 {0}。"
 }

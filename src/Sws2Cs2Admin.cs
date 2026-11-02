@@ -8,6 +8,7 @@ using SwiftlyS2.Shared.Plugins;
 using Sws2Cs2Admin.Configuration;
 using Sws2Cs2Admin.Contracts;
 using Sws2Cs2Admin.Services;
+using Sws2Cs2MapManager.Contracts;
 using Sws2Cs2Menus.Contracts;
 using MenuServiceContract = Sws2Cs2Menus.Contracts.IMenuService;
 
@@ -24,8 +25,8 @@ public partial class Sws2Cs2Admin : BasePlugin
     private BanService _bans = null!;
     private CommService _comms = null!;
     private AdminActionService _actions = null!;
-    private MapListService _maps = null!;
     private MenuServiceContract? _menus;
+    private IMapManagerService? _mapManager;
     private ServiceProvider _provider = null!;
     private IDisposable? _configSubscription;
 
@@ -64,7 +65,6 @@ public partial class Sws2Cs2Admin : BasePlugin
         _comms = new CommService(Core, commStore, _admins, _audit, _settings);
         _comms.Start();
         _actions = new AdminActionService(Core, _admins, _audit, _comms, _bans, _settings);
-        _maps = new MapListService(Core, _settings);
 
         _configSubscription = options.OnChange(newSettings =>
         {
@@ -81,7 +81,6 @@ public partial class Sws2Cs2Admin : BasePlugin
                 _bans.ApplySettings(newSettings);
                 _comms.ApplySettings(newSettings);
                 _actions.ApplySettings(newSettings);
-                _maps.ApplySettings(newSettings);
 
                 Core.Logger.LogInformation("[sws2-cs2admin] Configuration reloaded");
             });
@@ -108,13 +107,6 @@ public partial class Sws2Cs2Admin : BasePlugin
         interfaceManager.AddSharedInterface<IAdminService, AdminService>(
             AdminServiceConstants.InterfaceKey,
             _admins);
-
-        if (_maps != null)
-        {
-            interfaceManager.AddSharedInterface<IMapListService, MapListService>(
-                IMapListService.InterfaceKey,
-                _maps);
-        }
     }
 
     public override void UseSharedInterface(IInterfaceManager interfaceManager)
@@ -124,6 +116,23 @@ public partial class Sws2Cs2Admin : BasePlugin
                 out var menus))
         {
             _menus = menus;
+        }
+
+        if (_mapManager is not null)
+        {
+            _mapManager.MapChangeProgressed -= OnMapChangeProgressed;
+        }
+
+        if (interfaceManager.TryGetSharedInterface<IMapManagerService>(
+                IMapManagerService.InterfaceKey,
+                out var mapManager))
+        {
+            _mapManager = mapManager;
+            _mapManager.MapChangeProgressed += OnMapChangeProgressed;
+        }
+        else
+        {
+            _mapManager = null;
         }
     }
 
@@ -142,7 +151,12 @@ public partial class Sws2Cs2Admin : BasePlugin
         _configSubscription = null;
 
         _menus = null;
-        _maps = null!;
+        if (_mapManager is not null)
+        {
+            _mapManager.MapChangeProgressed -= OnMapChangeProgressed;
+        }
+
+        _mapManager = null;
         _actions?.Reset();
         _comms?.Dispose();
         _admins?.Shutdown();

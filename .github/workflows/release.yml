@@ -104,6 +104,13 @@ jobs:
           ref: main
           path: sws2-cs2menus
 
+      - name: Checkout map manager contracts
+        uses: actions/checkout@v4
+        with:
+          repository: XBDJ504764827/sws2-cs2mapmanager
+          ref: main
+          path: sws2-cs2mapmanager
+
       - name: Setup .NET
         uses: actions/setup-dotnet@v4
         with:
