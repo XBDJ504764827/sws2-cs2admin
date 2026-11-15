@@ -66,8 +66,10 @@ Add your SteamID and groups to `admins.jsonc`, then run `!reloadadmins` or reloa
 
 ## Map administration
 
-`!admin` opens the new centered Custom HUD dashboard with **Player actions** and
-**Map management**. Kicks and bans require confirmation. Update the companion
+`!admin` opens a text-only Custom HUD with persistent **Player actions** and
+**Map management** categories on the left. The right pane shows online players,
+actions, configured maps and confirmations. The first permitted category is
+selected automatically; selecting a category again refreshes its list. Kicks and bans require confirmation. Update the companion
 `sws2-cs2menus` Panorama Workshop addon as well as both plugin DLLs; see the menus
 repository's Workshop instructions. Without the compiled, mounted addon, `auto`
 uses the center-HTML fallback.
@@ -316,3 +318,5 @@ No manual version editing is required. The value committed in `src/VersionInfo.c
 ## License
 
 [MIT](LICENSE)
+
+Map lists display independent CKZ and VNL ratings from mapmanager (`CKZ` / `VNL` in each map object). Unknown modes are labeled separately. Update all shared contract consumers together when upgrading; the administrator HUD stays text-only.

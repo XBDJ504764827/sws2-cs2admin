@@ -4,6 +4,15 @@ All notable changes to this project are documented in this file.
 
 ## [Unreleased]
 
+### Map ratings
+
+- Show independent CKZ/VNL ratings in the text-only map list using the shared mapmanager catalog.
+
+### Sidebar revision
+
+- Switch `!admin` to persistent left categories and a right content pane, with the first permitted module opened automatically.
+- Remove decorative player/map/warning glyphs while keeping destructive actions visibly styled as text.
+
 ### Changed
 
 - Open `!admin` as a two-module Custom HUD dashboard: Player actions and Map management.

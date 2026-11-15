@@ -129,5 +129,7 @@
   "cs2admin.menu.kick.warning": "即将踢出 {0}（{1}）。玩家将立即断开连接，之后仍可重新加入。",
   "cs2admin.menu.ban.warning": "即将封禁 {0}，时长：{1}。确认后将断开连接并限制加入服务器。",
   "cs2admin.menu.reason.ban": "通过管理员菜单封禁",
-  "cs2admin.menu.map.warning": "将切换至 {0}（{1}）。确认后开始 3 秒倒计时；未安装的工坊地图会先下载，再切换。"
+  "cs2admin.menu.map.warning": "将切换至 {0}（{1}）。确认后开始 3 秒倒计时；未安装的工坊地图会先下载，再切换。",
+  "cs2admin.menu.map.tier_unknown": "未知",
+  "cs2admin.menu.map.tiers": "CKZ {0} | VNL {1}"
 }

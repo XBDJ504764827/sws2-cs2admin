@@ -22,7 +22,7 @@ public partial class Sws2Cs2Admin
 
         return _menus!.CreateMenu(localizer["cs2admin.menu.title"])
             .Id("admin.root")
-            .Layout(MenuLayout.Dashboard)
+            .Layout(MenuLayout.Sidebar)
             .Comment(localizer["cs2admin.menu.comment"])
             .PageSize(2)
             .ShowBack(false)
@@ -32,7 +32,6 @@ public partial class Sws2Cs2Admin
                 .Id("players")
                 .Text(localizer["cs2admin.menu.players"])
                 .Comment(localizer["cs2admin.menu.players.comment"])
-                .Tag(new MenuOptionAppearance("P"))
                 .Disabled(!canManagePlayers)
                 .OnSelected(context => context.Service.OpenSubMenu(context.Player,
                     BuildPlayersMenu(context.Player, AdminActor.FromPlayer(context.Player), localizer))))
@@ -40,7 +39,6 @@ public partial class Sws2Cs2Admin
                 .Id("maps")
                 .Text(localizer["cs2admin.menu.maps"])
                 .Comment(localizer["cs2admin.menu.maps.comment"])
-                .Tag(new MenuOptionAppearance("M"))
                 .Disabled(!_admins.HasPermission(admin, AdminPermissions.ChangeMap))
                 .OnSelected(context =>
                 {
@@ -83,7 +81,6 @@ public partial class Sws2Cs2Admin
                 .Id($"target-{target.PlayerID}")
                 .Text($"{target.Name} [{TargetResolver.TeamName(target)}]")
                 .Comment(canTarget ? $"#{target.PlayerID}  ·  {target.SteamID}" : localizer["cs2admin.menu.protected"])
-                .Tag(new MenuOptionAppearance("P"))
                 .Disabled(!canTarget)
                 .OnSelected(context =>
                 {
@@ -114,7 +111,7 @@ public partial class Sws2Cs2Admin
         builder.AddOption(option => option
             .Id("kick")
             .Text(localizer["cs2admin.menu.action.kick"])
-            .Tag(new MenuOptionAppearance("!", Destructive: true))
+            .Tag(new MenuOptionAppearance("", Destructive: true))
             .Hidden(!_admins.HasPermission(admin, AdminPermissions.Kick))
             .OnSelected(context => context.Service.OpenSubMenu(
                 context.Player,
@@ -123,7 +120,7 @@ public partial class Sws2Cs2Admin
         builder.AddOption(option => option
             .Id("ban")
             .Text(localizer["cs2admin.menu.action.ban"])
-            .Tag(new MenuOptionAppearance("!", Destructive: true))
+            .Tag(new MenuOptionAppearance("", Destructive: true))
             .Hidden(!_admins.HasPermission(admin, AdminPermissions.Ban))
             .OnSelected(context => context.Service.OpenSubMenu(
                 context.Player,
@@ -193,7 +190,7 @@ public partial class Sws2Cs2Admin
         builder.AddOption(option => option
             .Id("confirm")
             .Text(localizer["cs2admin.menu.action.kick.confirm"])
-            .Tag(new MenuOptionAppearance("!", Destructive: true))
+            .Tag(new MenuOptionAppearance("", Destructive: true))
             .Hidden(!_admins.HasPermission(admin, AdminPermissions.Kick))
             .OnSelected(context => _actions.Kick(actor, target, localizer["cs2admin.menu.reason.kick"])));
 
@@ -268,7 +265,7 @@ public partial class Sws2Cs2Admin
         builder.AddOption(option => option
             .Id("confirm")
             .Text(localizer["cs2admin.menu.action.ban.confirm"])
-            .Tag(new MenuOptionAppearance("!", Destructive: true))
+            .Tag(new MenuOptionAppearance("", Destructive: true))
             .Hidden(!_admins.HasPermission(admin, AdminPermissions.Ban))
             .OnSelected(context => _actions.Ban(actor, target, duration, localizer["cs2admin.menu.reason.ban"])));
 
@@ -311,11 +308,13 @@ public partial class Sws2Cs2Admin
 
         foreach (var map in maps)
         {
+            var unknownTier = localizer["cs2admin.menu.map.tier_unknown"];
+            var tiers = localizer["cs2admin.menu.map.tiers",
+                map.CkzTier?.ToString() ?? unknownTier, map.VnlTier?.ToString() ?? unknownTier];
             builder.AddOption(option => option
                 .Id($"map-{map.Id}")
                 .Text(map.Name)
-                .Tag(new MenuOptionAppearance("M"))
-                .Comment(map.Kind == MapKind.Workshop ? $"Workshop ID: {map.Value}" : map.Value)
+                .Comment($"{tiers} · {(map.Kind == MapKind.Workshop ? $"Workshop ID: {map.Value}" : map.Value)}")
                 .OnSelected(context => context.Service.OpenSubMenu(
                     context.Player,
                     BuildMapConfirmMenu(admin, map, localizer))));
@@ -338,7 +337,6 @@ public partial class Sws2Cs2Admin
         builder.AddOption(option => option
             .Id("confirm")
             .Text(localizer["cs2admin.menu.action.map.confirm"])
-            .Tag(new MenuOptionAppearance("M"))
             .OnSelected(context => ChangeMapWithCountdown(admin, map, localizer)));
 
         builder.AddOption(option => option

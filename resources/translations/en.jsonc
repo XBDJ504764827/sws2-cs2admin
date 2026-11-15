@@ -129,5 +129,7 @@
   "cs2admin.menu.kick.warning": "Kick {0} ({1})? They will disconnect immediately and may rejoin afterwards.",
   "cs2admin.menu.ban.warning": "Ban {0} for {1}? They will disconnect and be prevented from joining the server.",
   "cs2admin.menu.reason.ban": "Banned through the admin menu",
-  "cs2admin.menu.map.warning": "Switch to {0} ({1}). Starts a 3-second countdown; missing Workshop maps download before switching."
+  "cs2admin.menu.map.warning": "Switch to {0} ({1}). Starts a 3-second countdown; missing Workshop maps download before switching.",
+  "cs2admin.menu.map.tier_unknown": "Unrated",
+  "cs2admin.menu.map.tiers": "CKZ {0} | VNL {1}"
 }
