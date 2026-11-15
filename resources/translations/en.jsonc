@@ -125,11 +125,11 @@
   "cs2admin.menu.mapmanager.unavailable": "Map manager is not loaded.",
   "cs2admin.action.map.success": "Map changed to {0}.",
   "cs2admin.menu.players.help": "Select an online player to view actions. Protected players cannot be selected.",
-  "cs2admin.menu.maps.help": "Choose a configured map. Missing Workshop maps download on demand after confirmation.",
+  "cs2admin.menu.maps.help": "Choose a configured map. Missing Workshop maps download on demand after confirmation. NUB: checkpoints / PRO: no checkpoints.",
   "cs2admin.menu.kick.warning": "Kick {0} ({1})? They will disconnect immediately and may rejoin afterwards.",
   "cs2admin.menu.ban.warning": "Ban {0} for {1}? They will disconnect and be prevented from joining the server.",
   "cs2admin.menu.reason.ban": "Banned through the admin menu",
   "cs2admin.menu.map.warning": "Switch to {0} ({1}). Starts a 3-second countdown; missing Workshop maps download before switching.",
   "cs2admin.menu.map.tier_unknown": "Unrated",
-  "cs2admin.menu.map.tiers": "CKZ {0} | VNL {1}"
+  "cs2admin.menu.map.tiers": "CKZ NUB {0} / PRO {1} | VNL NUB {2} / PRO {3}"
 }

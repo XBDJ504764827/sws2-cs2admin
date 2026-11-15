@@ -310,7 +310,8 @@ public partial class Sws2Cs2Admin
         {
             var unknownTier = localizer["cs2admin.menu.map.tier_unknown"];
             var tiers = localizer["cs2admin.menu.map.tiers",
-                map.CkzTier?.ToString() ?? unknownTier, map.VnlTier?.ToString() ?? unknownTier];
+                map.CkzNubTier?.ToString() ?? unknownTier, map.CkzProTier?.ToString() ?? unknownTier,
+                map.VnlNubTier?.ToString() ?? unknownTier, map.VnlProTier?.ToString() ?? unknownTier];
             builder.AddOption(option => option
                 .Id($"map-{map.Id}")
                 .Text(map.Name)

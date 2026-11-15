@@ -319,4 +319,4 @@ No manual version editing is required. The value committed in `src/VersionInfo.c
 
 [MIT](LICENSE)
 
-Map lists display independent CKZ and VNL ratings from mapmanager (`CKZ` / `VNL` in each map object). Unknown modes are labeled separately. Update all shared contract consumers together when upgrading; the administrator HUD stays text-only.
+Map lists display independent CKZ NUB/PRO and VNL NUB/PRO ratings from mapmanager (nested `NUB` / `PRO` under `CKZ` and `VNL` in each map object). NUB means checkpoints (存点); PRO means no checkpoints (裸跳). Unknown categories are labeled separately. Update all shared contract consumers together when upgrading; the administrator HUD stays text-only.

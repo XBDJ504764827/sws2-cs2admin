@@ -4,6 +4,10 @@ All notable changes to this project are documented in this file.
 
 ## [Unreleased]
 
+### NUB / PRO ratings
+
+- Show separate CKZ NUB/PRO and VNL NUB/PRO ratings in the text-only map list.
+
 ### Map ratings
 
 - Show independent CKZ/VNL ratings in the text-only map list using the shared mapmanager catalog.
