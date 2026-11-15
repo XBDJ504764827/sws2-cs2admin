@@ -66,6 +66,15 @@ Add your SteamID and groups to `admins.jsonc`, then run `!reloadadmins` or reloa
 
 ## Map administration
 
+`!admin` opens the new centered Custom HUD dashboard with **Player actions** and
+**Map management**. Kicks and bans require confirmation. Update the companion
+`sws2-cs2menus` Panorama Workshop addon as well as both plugin DLLs; see the menus
+repository's Workshop instructions. Without the compiled, mounted addon, `auto`
+uses the center-HTML fallback.
+
+Map administration requires `sws2.admin.map` (included in `sws2.admin.*`). Add
+that node to existing custom groups that should be able to change maps.
+
 The admin menu reads its map catalog from `sws2-cs2mapmanager`. Configure local maps and Workshop IDs in that plugin's `config.jsonc`; this keeps one list available to admin actions and future RTV voting. Install MultiAddonManager on the server to enable automatic Workshop downloads. The admin menu confirms the selected map, announces a 3-second countdown, then asks mapmanager to switch or download it.
 
 ## Configuration
@@ -145,6 +154,7 @@ Direct permissions, group permissions and `settings.DefaultImmunity` are combine
 | :--- | :--- |
 | `sws2.admin.*` | Every admin permission (wildcard) |
 | `sws2.admin.menu` | Reserved for consumers; any configured admin can open `!admin` |
+| `sws2.admin.map` | Change maps through the admin HUD |
 | `sws2.admin.kick` | `!kick` |
 | `sws2.admin.slay` | `!slay` |
 | `sws2.admin.slap` | `!slap` |

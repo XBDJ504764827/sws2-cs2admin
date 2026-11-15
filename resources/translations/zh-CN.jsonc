@@ -59,9 +59,9 @@
   "cs2admin.comm.silence.removed": "已解除 {0} 的沉默。",
   "cs2admin.comm.silence.removed_target": "你的沉默已被解除。",
   "cs2admin.menu.title": "管理员面板",
-  "cs2admin.menu.comment": "所有操作都会进行权限检查并写入审计日志。",
+  "cs2admin.menu.comment": "管理当前服务器，让每一次操作清晰、可控。",
   "cs2admin.menu.players": "玩家操作",
-  "cs2admin.menu.players.comment": "对在线玩家执行踢出、处决、冻结、禁麦、禁言或封禁。",
+  "cs2admin.menu.players.comment": "查看在线玩家，执行踢出、封禁与交流管理。",
   "cs2admin.menu.bans": "封禁管理",
   "cs2admin.menu.bans.comment": "查看并解除生效中的封禁。",
   "cs2admin.menu.server": "服务器工具",
@@ -100,7 +100,7 @@
   "cs2admin.menu.info.groups": "管理员组",
   "cs2admin.menu.info.permissions": "权限节点",
   "cs2admin.menu.maps": "地图管理",
-  "cs2admin.menu.maps.comment": "选择并更换服务器地图。",
+  "cs2admin.menu.maps.comment": "浏览服务器地图列表，选择下一张目的地。",
   "cs2admin.menu.no_maps": "没有可用的地图。",
   "cs2admin.menu.duration.30s": "30 秒",
   "cs2admin.menu.duration.60s": "60 秒",
@@ -123,5 +123,11 @@
   "cs2admin.action.map.failed": "地图切换失败：{0}。",
   "cs2admin.action.map.not_found": "该地图已不在当前地图列表中。",
   "cs2admin.menu.mapmanager.unavailable": "地图管理器插件未加载。",
-  "cs2admin.action.map.success": "已将地图更换至 {0}。"
+  "cs2admin.action.map.success": "已将地图更换至 {0}。",
+  "cs2admin.menu.players.help": "选择一位在线玩家，查看可用操作。受保护的玩家不可选择。",
+  "cs2admin.menu.maps.help": "从配置的地图中选择。未安装的工坊地图会在确认后按需下载。",
+  "cs2admin.menu.kick.warning": "即将踢出 {0}（{1}）。玩家将立即断开连接，之后仍可重新加入。",
+  "cs2admin.menu.ban.warning": "即将封禁 {0}，时长：{1}。确认后将断开连接并限制加入服务器。",
+  "cs2admin.menu.reason.ban": "通过管理员菜单封禁",
+  "cs2admin.menu.map.warning": "将切换至 {0}（{1}）。确认后开始 3 秒倒计时；未安装的工坊地图会先下载，再切换。"
 }

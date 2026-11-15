@@ -59,9 +59,9 @@
   "cs2admin.comm.silence.removed": "Removed the silence for {0}.",
   "cs2admin.comm.silence.removed_target": "Your silence has been removed.",
   "cs2admin.menu.title": "Admin Panel",
-  "cs2admin.menu.comment": "Every action is permission-checked and audited.",
+  "cs2admin.menu.comment": "Your server. Every action, under control.",
   "cs2admin.menu.players": "Player actions",
-  "cs2admin.menu.players.comment": "Kick, slay, freeze, mute, gag or ban an online player.",
+  "cs2admin.menu.players.comment": "Manage online players, bans and communication.",
   "cs2admin.menu.bans": "Ban management",
   "cs2admin.menu.bans.comment": "View and lift active bans.",
   "cs2admin.menu.server": "Server tools",
@@ -100,7 +100,7 @@
   "cs2admin.menu.info.groups": "Groups",
   "cs2admin.menu.info.permissions": "Permissions",
   "cs2admin.menu.maps": "Map management",
-  "cs2admin.menu.maps.comment": "Select and change the server map.",
+  "cs2admin.menu.maps.comment": "Explore the map catalog and choose your next destination.",
   "cs2admin.menu.no_maps": "No maps available.",
   "cs2admin.menu.duration.30s": "30 seconds",
   "cs2admin.menu.duration.60s": "60 seconds",
@@ -123,5 +123,11 @@
   "cs2admin.action.map.failed": "Map change failed: {0}.",
   "cs2admin.action.map.not_found": "That map is no longer in the configured map list.",
   "cs2admin.menu.mapmanager.unavailable": "Map manager is not loaded.",
-  "cs2admin.action.map.success": "Map changed to {0}."
+  "cs2admin.action.map.success": "Map changed to {0}.",
+  "cs2admin.menu.players.help": "Select an online player to view actions. Protected players cannot be selected.",
+  "cs2admin.menu.maps.help": "Choose a configured map. Missing Workshop maps download on demand after confirmation.",
+  "cs2admin.menu.kick.warning": "Kick {0} ({1})? They will disconnect immediately and may rejoin afterwards.",
+  "cs2admin.menu.ban.warning": "Ban {0} for {1}? They will disconnect and be prevented from joining the server.",
+  "cs2admin.menu.reason.ban": "Banned through the admin menu",
+  "cs2admin.menu.map.warning": "Switch to {0} ({1}). Starts a 3-second countdown; missing Workshop maps download before switching."
 }

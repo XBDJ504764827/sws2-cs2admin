@@ -24,6 +24,9 @@ public static class AdminPermissions
     /// <summary>Open the admin menu.</summary>
     public const string Menu = "sws2.admin.menu";
 
+    /// <summary>Change the server map through the shared map manager.</summary>
+    public const string ChangeMap = "sws2.admin.map";
+
     /// <summary>Kick a player.</summary>
     public const string Kick = "sws2.admin.kick";
 
