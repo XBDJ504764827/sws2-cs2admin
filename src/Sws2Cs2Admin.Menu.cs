@@ -18,13 +18,13 @@ public partial class Sws2Cs2Admin
         var localizer = Core.Translation.GetPlayerLocalizer(admin);
         var canManagePlayers = HasAnyPermission(admin, AdminPermissions.Kick, AdminPermissions.Slay,
             AdminPermissions.Slap, AdminPermissions.Respawn, AdminPermissions.Freeze, AdminPermissions.Mute,
-            AdminPermissions.Gag, AdminPermissions.Silence, AdminPermissions.Ban);
+            AdminPermissions.Gag, AdminPermissions.Silence, AdminPermissions.Ban, AdminPermissions.Spectate);
 
         return _menus!.CreateMenu(localizer["cs2admin.menu.title"])
             .Id("admin.root")
             .Layout(MenuLayout.Sidebar)
             .Comment(localizer["cs2admin.menu.comment"])
-            .PageSize(3)
+            .PageSize(4)
             .ShowBack(false)
             .ShowClose()
             .CloseOnSelect(false)
@@ -39,18 +39,22 @@ public partial class Sws2Cs2Admin
                 .Id("maps")
                 .Text(localizer["cs2admin.menu.maps"])
                 .Comment(localizer["cs2admin.menu.maps.comment"])
-                .Disabled(!_admins.HasPermission(admin, AdminPermissions.ChangeMap))
+                .Disabled(!HasAnyPermission(admin, AdminPermissions.ChangeMap, AdminPermissions.MapControl))
                 .OnSelected(context =>
                 {
-                    if (_admins.HasPermission(context.Player, AdminPermissions.ChangeMap))
+                    if (HasAnyPermission(context.Player, AdminPermissions.ChangeMap, AdminPermissions.MapControl))
                     {
-                        context.Service.OpenSubMenu(context.Player, BuildMapsMenu(context.Player, localizer));
+                        context.Service.OpenSubMenu(context.Player, BuildMapManagementMenu(context.Player));
                     }
                 }))
             .AddOption(option => option.Id("bans")
                 .Text(localizer["cs2admin.menu.bans"])
                 .Disabled(!_admins.HasPermission(admin, AdminPermissions.BansView))
                 .OnSelected(context => context.Service.OpenSubMenu(context.Player, BuildBanFilters(context.Player))))
+            .AddOption(option => option.Id("server")
+                .Text(localizer["cs2admin.menu.server"])
+                .OnSelected(context => context.Service.OpenSubMenu(context.Player,
+                    BuildServerMenu(context.Player, AdminActor.FromPlayer(context.Player), localizer))))
             .Build();
     }
 
@@ -81,14 +85,16 @@ public partial class Sws2Cs2Admin
         foreach (var target in players)
         {
             var canTarget = _admins.CanTarget(actor, target);
+            var canObserve = _admins.HasPermission(admin, AdminPermissions.Spectate)
+                && target.IsAlive && target.SteamID != admin.SteamID;
             builder.AddOption(option => option
                 .Id($"target-{target.PlayerID}")
                 .Text($"{target.Name} [{TargetResolver.TeamName(target)}]")
-                .Comment(canTarget ? $"#{target.PlayerID}  ·  {target.SteamID}" : localizer["cs2admin.menu.protected"])
-                .Disabled(!canTarget)
+                .Comment(canTarget ? $"#{target.PlayerID}  ·  {target.SteamID}" : localizer[canObserve ? "cs2admin.menu.protected.spectate" : "cs2admin.menu.protected"])
+                .Disabled(!canTarget && !canObserve)
                 .OnSelected(context =>
                 {
-                    if (canTarget)
+                    if (canTarget || canObserve)
                     {
                         context.Service.OpenSubMenu(context.Player, BuildPlayerActionMenu(admin, actor, target, localizer));
                     }
@@ -112,11 +118,24 @@ public partial class Sws2Cs2Admin
             .ShowClose()
             .CloseOnSelect(false);
 
+        var canTarget = _admins.CanTarget(actor, target);
+        var targetSteam = target.SteamID;
+        builder.AddOption(option => option.Id("spectate")
+            .Text(localizer["cs2admin.menu.action.spectate"])
+            .Comment(localizer["cs2admin.menu.action.spectate.help"])
+            .Hidden(!_admins.HasPermission(admin, AdminPermissions.Spectate))
+            .Disabled(!target.IsAlive || targetSteam == admin.SteamID)
+            .OnSelected(context =>
+            {
+                if (_actions.Spectate(AdminActor.FromPlayer(context.Player), target, targetSteam))
+                    context.Service.Close(context.Player);
+            }));
+
         builder.AddOption(option => option
             .Id("kick")
             .Text(localizer["cs2admin.menu.action.kick"])
             .Tag(new MenuOptionAppearance("", Destructive: true))
-            .Hidden(!_admins.HasPermission(admin, AdminPermissions.Kick))
+            .Hidden(!canTarget || !_admins.HasPermission(admin, AdminPermissions.Kick))
             .OnSelected(context => context.Service.OpenSubMenu(
                 context.Player,
                 BuildKickConfirmMenu(admin, actor, target, localizer))));
@@ -125,7 +144,7 @@ public partial class Sws2Cs2Admin
             .Id("ban")
             .Text(localizer["cs2admin.menu.action.ban"])
             .Tag(new MenuOptionAppearance("", Destructive: true))
-            .Hidden(!_admins.HasPermission(admin, AdminPermissions.Ban))
+            .Hidden(!canTarget || !_admins.HasPermission(admin, AdminPermissions.Ban))
             .OnSelected(context => context.Service.OpenSubMenu(
                 context.Player,
                 BuildBanDurationMenu(admin, actor, target, localizer))));
@@ -133,25 +152,25 @@ public partial class Sws2Cs2Admin
         builder.AddOption(option => option
             .Id("slay")
             .Text(localizer["cs2admin.menu.action.slay"])
-            .Hidden(!_admins.HasPermission(admin, AdminPermissions.Slay))
+            .Hidden(!canTarget || !_admins.HasPermission(admin, AdminPermissions.Slay))
             .OnSelected(context => _actions.Slay(actor, target)));
 
         builder.AddOption(option => option
             .Id("slap")
             .Text(localizer["cs2admin.menu.action.slap"])
-            .Hidden(!_admins.HasPermission(admin, AdminPermissions.Slap))
+            .Hidden(!canTarget || !_admins.HasPermission(admin, AdminPermissions.Slap))
             .OnSelected(context => _actions.Slap(actor, target, 10)));
 
         builder.AddOption(option => option
             .Id("respawn")
             .Text(localizer["cs2admin.menu.action.respawn"])
-            .Hidden(!_admins.HasPermission(admin, AdminPermissions.Respawn))
+            .Hidden(!canTarget || !_admins.HasPermission(admin, AdminPermissions.Respawn))
             .OnSelected(context => _actions.Respawn(actor, target)));
 
         builder.AddOption(option => option
             .Id("freeze")
             .Text(localizer["cs2admin.menu.action.freeze"])
-            .Hidden(!_admins.HasPermission(admin, AdminPermissions.Freeze))
+            .Hidden(!canTarget || !_admins.HasPermission(admin, AdminPermissions.Freeze))
             .OnSelected(context => _actions.Freeze(actor, target, 5)));
 
         var commDuration = _settings.Comms.DefaultDurationMinutes > 0
@@ -161,19 +180,19 @@ public partial class Sws2Cs2Admin
         builder.AddOption(option => option
             .Id("mute")
             .Text(localizer["cs2admin.menu.action.mute"])
-            .Hidden(!_admins.HasPermission(admin, AdminPermissions.Mute))
+            .Hidden(!canTarget || !_admins.HasPermission(admin, AdminPermissions.Mute))
             .OnSelected(context => _actions.Mute(actor, target, commDuration, localizer["cs2admin.menu.reason.comm"])));
 
         builder.AddOption(option => option
             .Id("gag")
             .Text(localizer["cs2admin.menu.action.gag"])
-            .Hidden(!_admins.HasPermission(admin, AdminPermissions.Gag))
+            .Hidden(!canTarget || !_admins.HasPermission(admin, AdminPermissions.Gag))
             .OnSelected(context => _actions.Gag(actor, target, commDuration, localizer["cs2admin.menu.reason.comm"])));
 
         builder.AddOption(option => option
             .Id("silence")
             .Text(localizer["cs2admin.menu.action.silence"])
-            .Hidden(!_admins.HasPermission(admin, AdminPermissions.Silence))
+            .Hidden(!canTarget || !_admins.HasPermission(admin, AdminPermissions.Silence))
             .OnSelected(context => _actions.Silence(actor, target, commDuration, localizer["cs2admin.menu.reason.comm"])));
 
 
@@ -368,67 +387,29 @@ public partial class Sws2Cs2Admin
 
     private void BroadcastMapCountdown(IPlayer admin, MapInfo map, int secondsRemaining, ILocalizer localizer)
     {
-        foreach (var player in Core.PlayerManager.GetAllValidPlayers())
-        {
-            var playerLocalizer = Core.Translation.GetPlayerLocalizer(player);
-            player.SendChat($"{playerLocalizer["cs2admin.prefix"]} {playerLocalizer["cs2admin.action.map.countdown", map.Name, secondsRemaining]}");
-        }
-
-        if (secondsRemaining <= 1)
-        {
-            Core.Scheduler.DelayBySeconds(1, () => RequestManagedMapChange(admin, map, localizer));
-            return;
-        }
-
-        Core.Scheduler.DelayBySeconds(1, () => BroadcastMapCountdown(admin, map, secondsRemaining - 1, localizer));
-    }
-
-    private void RequestManagedMapChange(IPlayer admin, MapInfo map, ILocalizer adminLocalizer)
-    {
-        if (!admin.IsValid || !_admins.HasPermission(admin, AdminPermissions.ChangeMap))
-        {
-            ReplyMapChange(admin, adminLocalizer, "cs2admin.no_permission");
-            return;
-        }
-
-        if (_mapManager is null)
-        {
-            ReplyMapChange(admin, adminLocalizer, "cs2admin.menu.mapmanager.unavailable");
-            return;
-        }
-
-        var result = _mapManager.RequestChange(map.Id);
-        switch (result.Status)
-        {
-            case MapChangeRequestStatus.ChangeStarted:
-            case MapChangeRequestStatus.DownloadStarted:
-                break;
-            case MapChangeRequestStatus.DownloadAlreadyPending:
-                ReplyMapChange(admin, adminLocalizer, "cs2admin.action.map.download_pending", map.Name);
-                break;
-            case MapChangeRequestStatus.Busy:
-                ReplyMapChange(admin, adminLocalizer, "cs2admin.action.map.busy");
-                break;
-            case MapChangeRequestStatus.MapNotFound:
-                ReplyMapChange(admin, adminLocalizer, "cs2admin.action.map.not_found");
-                break;
-            case MapChangeRequestStatus.InvalidMap:
-            case MapChangeRequestStatus.WorkshopDownloadDisabled:
-            case MapChangeRequestStatus.Failed:
-                break;
-            default:
-                ReplyMapChange(admin, adminLocalizer, "cs2admin.action.map.failed", map.Name);
-                break;
-        }
+        if (_mapManager is null) { ReplyMapChange(admin, localizer, "cs2admin.menu.mapmanager.unavailable"); return; }
+        var result = _mapManager.ScheduleChange(map.Id, secondsRemaining, "admin:" + admin.SteamID);
+        if (result.Status == MapChangeRequestStatus.Paused) ReplyMapChange(admin, localizer, "cs2admin.mapcontrol.paused");
+        else if (result.Status == MapChangeRequestStatus.Busy) ReplyMapChange(admin, localizer, "cs2admin.action.map.busy");
+        else if (result.Status == MapChangeRequestStatus.MapNotFound) ReplyMapChange(admin, localizer, "cs2admin.action.map.not_found");
     }
 
     private void OnMapChangeProgressed(object? sender, MapChangeProgressEventArgs args)
     {
+        if (args.Progress == MapChangeProgress.CountdownStarted && _mapManager?.GetChangeState().Source != "rtv")
+        {
+            foreach (var player in Core.PlayerManager.GetAllValidPlayers())
+            {
+                var translation = Core.Translation.GetPlayerLocalizer(player);
+                player.SendChat($"{translation["cs2admin.prefix"]} {translation["cs2admin.action.map.countdown", args.Map.Name, args.DelaySeconds]}");
+            }
+        }
         var messageKey = args.Progress switch
         {
             MapChangeProgress.DownloadStarted => "cs2admin.action.map.download_started",
             MapChangeProgress.ChangeIssued => "cs2admin.action.map.change_started",
             MapChangeProgress.Failed => "cs2admin.action.map.failed",
+            MapChangeProgress.Cancelled => "cs2admin.mapcontrol.cancelled",
             _ => null
         };
 
@@ -467,14 +448,19 @@ public partial class Sws2Cs2Admin
             .PageSize(_settings.Menu.PageSize)
             .ShowBack()
             .ShowClose()
-            .CloseOnSelect();
+            .CloseOnSelect(false);
 
+        builder.AddOption(option => option.Id("status").Text(localizer["cs2admin.server.status"])
+            .Comment($"{Core.Engine.GlobalVars.MapName} · {Core.PlayerManager.GetAllValidPlayers().Count()} players").Disabled());
+        builder.AddOption(option => option.Id("myinfo").Text(localizer["cs2admin.menu.myinfo"])
+            .OnSelected(context => context.Service.OpenSubMenu(context.Player, BuildMyInfoMenu(context.Player, localizer))));
         builder.AddOption(option => option
             .Id("reload")
             .Text(localizer["cs2admin.menu.reload"])
             .Hidden(!_admins.HasPermission(admin, AdminPermissions.Reload))
             .OnSelected(context =>
             {
+                if (!_admins.HasPermission(context.Player, AdminPermissions.Reload)) return;
                 var success = _admins.Reload();
                 context.Player.SendChat($"{localizer["cs2admin.prefix"]} {localizer[success ? "cs2admin.reload.success" : "cs2admin.reload.failed"]}");
             }));

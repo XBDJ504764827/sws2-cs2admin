@@ -22,6 +22,7 @@ internal sealed class AdminActionService
     private readonly CommService _comms;
     private readonly BanService _bans;
     private readonly ConcurrentDictionary<int, int> _freezeTokens = new();
+    private readonly Dictionary<int, Guid> _spectateTokens = [];
 
     private AdminSettings _settings;
 
@@ -45,6 +46,84 @@ internal sealed class AdminActionService
     public void ApplySettings(AdminSettings settings)
     {
         _settings = settings;
+    }
+
+    public bool Spectate(AdminActor actor, IPlayer target, ulong expectedSteamId)
+    {
+        var localizer = LocalizerFor(actor);
+        if (actor.Player is not { IsValid: true, Controller.IsValid: true } viewer)
+        {
+            Reply(actor, localizer["cs2admin.only_players"]);
+            return false;
+        }
+        if (!_admins.HasPermission(actor.SteamId, AdminPermissions.Spectate))
+        {
+            Reply(actor, localizer["cs2admin.no_permission"]);
+            return false;
+        }
+        if (!target.IsValid || target.SteamID != expectedSteamId || !target.IsAlive
+            || target.PlayerPawn is not { IsValid: true })
+        {
+            Reply(actor, localizer["cs2admin.action.spectate.unavailable"]);
+            return false;
+        }
+        if (viewer.SteamID == expectedSteamId)
+        {
+            Reply(actor, localizer["cs2admin.action.self"]);
+            return false;
+        }
+
+        var request = Guid.NewGuid();
+        var viewerId = viewer.PlayerID;
+        var viewerSteam = viewer.SteamID;
+        _spectateTokens[viewerId] = request;
+        if (viewer.Controller.TeamNum != (byte)Team.Spectator)
+            viewer.ChangeTeam(Team.Spectator);
+
+        void ApplyView(int remaining)
+        {
+            if (!_spectateTokens.TryGetValue(viewerId, out var current) || current != request) return;
+            if (!viewer.IsValid || viewer.SteamID != viewerSteam || viewer.Controller is not { IsValid: true } controller
+                || !_admins.HasPermission(viewerSteam, AdminPermissions.Spectate))
+            {
+                _spectateTokens.Remove(viewerId);
+                return;
+            }
+            // Resolve the SteamID again: slots and pawns can change between frames.
+            var selected = _core.PlayerManager.GetPlayerFromSteamId(expectedSteamId);
+            if (selected is not { IsValid: true, IsAlive: true } || selected.PlayerPawn is not { IsValid: true } pawn
+                || controller.TeamNum != (byte)Team.Spectator)
+            {
+                _spectateTokens.Remove(viewerId);
+                Reply(actor, localizer["cs2admin.action.spectate.unavailable"]);
+                return;
+            }
+            var observer = controller.ObserverPawn.Value?.ObserverServices;
+            if (observer is null)
+            {
+                // ChangeTeam creates the observer pawn on a subsequent frame.
+                if (remaining > 0)
+                {
+                    _core.Scheduler.NextTick(() => ApplyView(remaining - 1));
+                    return;
+                }
+                _spectateTokens.Remove(viewerId);
+                Reply(actor, localizer["cs2admin.action.spectate.unavailable"]);
+                return;
+            }
+            observer.ObserverMode = 4; // OBS_MODE_IN_EYE
+            observer.ObserverLastMode = (ObserverMode_t)0;
+            observer.ObserverTarget.Value = pawn;
+            observer.ObserverModeUpdated();
+            observer.ObserverTargetUpdated();
+            controller.DesiredObserverMode = 4;
+            controller.DesiredObserverTarget.Value = pawn;
+            _spectateTokens.Remove(viewerId);
+            _audit.Log(actor, "player.spectate", selected.SteamID, selected.Name);
+            Reply(actor, localizer["cs2admin.action.spectate.success", selected.Name]);
+        }
+        _core.Scheduler.NextTick(() => ApplyView(8));
+        return true;
     }
 
     public bool Kick(AdminActor actor, IPlayer target, string reason)
@@ -193,11 +272,13 @@ internal sealed class AdminActionService
     public void CleanupPlayer(int playerId)
     {
         _freezeTokens.TryRemove(playerId, out _);
+        _spectateTokens.Remove(playerId);
     }
 
     public void Reset()
     {
         _freezeTokens.Clear();
+        _spectateTokens.Clear();
     }
 
     private bool CanAct(AdminActor actor, IPlayer target, string permission, out ILocalizer localizer)

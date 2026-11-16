@@ -14,7 +14,7 @@
 - Admin identities loaded from `admins.jsonc`
 - Groups, direct permission nodes and immunity levels
 - Optional permission nodes from SwiftlyS2's `permissions.jsonc`
-- Player actions: kick, slay, slap, respawn and freeze
+- Player actions: kick, slay, slap, respawn, freeze and first person spectating
 - Communication controls: mute, gag, silence and their removals
 - SQLite bans with temporary/permanent durations, offline `addban` and automatic JSON migration
 - Searchable, paginated ban management with confirmed unban and retained history
@@ -163,6 +163,8 @@ Direct permissions, group permissions and `settings.DefaultImmunity` are combine
 | `sws2.admin.*` | Every admin permission (wildcard) |
 | `sws2.admin.menu` | Reserved for consumers; any configured admin can open `!admin` |
 | `sws2.admin.map` | Change maps through the admin HUD |
+| `sws2.admin.map.control` | Cancel, pause and resume managed map changes |
+| `sws2.admin.spectate` | Spectate a living player in first person |
 | `sws2.admin.kick` | `!kick` |
 | `sws2.admin.slay` | `!slay` |
 | `sws2.admin.slap` | `!slap` |
@@ -369,3 +371,20 @@ No manual version editing is required. The value committed in `src/VersionInfo.c
 [MIT](LICENSE)
 
 Map lists display independent CKZ NUB/PRO and VNL NUB/PRO ratings from mapmanager (nested `NUB` / `PRO` under `CKZ` and `VNL` in each map object). NUB means checkpoints (存点); PRO means no checkpoints (裸跳). Unknown categories are labeled separately. Update all shared contract consumers together when upgrading; admin Map management and `!yd` share the MapPicker renderer, stable map IDs, packaged screenshots and all four rating badges. Other administrator pages remain text-only; no decorative icons are added.
+
+## Map control, server tools and spectating
+
+The sidebar contains Player actions, Map management, Ban management and Server management. Under Map management:
+
+- **Browse and change map** uses the shared catalog and the existing map picker.
+- **Cancel pending change now** cancels a countdown or a map switch waiting for download, and clears old RTV votes. A new vote may start a fresh change.
+- **Pause map changes now** cancels current work and blocks new managed RTV/admin changes until **Resume map changes**. Resuming does not revive cancelled work; the reservation remains available for a new vote.
+- **Refresh change status** updates the pending target, source and countdown/download stage without leaving the category.
+
+Chat shortcuts are `!cancelmap`, `!pausemaps`, `!resumemaps`; server console equivalents are `sw_cancelmap`, `sw_pausemaps`, `sw_resumemaps`. These require `sws2.admin.map.control` (included in `sws2.admin.*`). Map browsing/change still requires `sws2.admin.map`. Pause resets on map unload or restart; a Steam download itself may finish after cancellation. Already-issued engine commands and direct console changes cannot be cancelled.
+
+**Player actions → player → Spectate player** joins the spectator team and selects the living player's first person camera. This leaves the administrator's playing team. It requires `sws2.admin.spectate`; immunity protects punitive actions but does not prevent spectating. Targets are revalidated after the team change. Self-spectating and unavailable/dead players are rejected. The moderator template includes spectating; existing custom groups must add the permission if desired.
+
+Server management provides the current map/player count, your admin information, roster reload (`sws2.admin.reload`) and the audit directory (`sws2.admin.audit`).
+
+Install matching menus, mapmanager, admin and rockthevote builds together, including their contract DLLs, then restart the server. Existing configuration/database files can be kept; no configuration regeneration or new Workshop HUD publication is needed for these menu actions.

@@ -27,6 +27,12 @@ public static class AdminPermissions
     /// <summary>Change the server map through the shared map manager.</summary>
     public const string ChangeMap = "sws2.admin.map";
 
+    /// <summary>Cancel, pause and resume managed map changes.</summary>
+    public const string MapControl = "sws2.admin.map.control";
+
+    /// <summary>Join spectators and watch another living player.</summary>
+    public const string Spectate = "sws2.admin.spectate";
+
     /// <summary>Kick a player.</summary>
     public const string Kick = "sws2.admin.kick";
 

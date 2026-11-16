@@ -4,6 +4,12 @@ All notable changes to this project are documented in this file.
 
 ## [Unreleased]
 
+### Map controls and spectating
+
+- Add immediate cancel, pause, resume and status refresh under Map management, with dedicated map-control permission and chat/console shortcuts.
+- Add first person spectating for living players with identity checks and spectator-pawn initialization retries.
+- Expose Server management with map/player status, admin information, roster reload and audit location.
+
 ### SQLite ban management and shared map pictures
 
 - Persist bans in SQLite with transactional legacy JSON import and preserved backups.
