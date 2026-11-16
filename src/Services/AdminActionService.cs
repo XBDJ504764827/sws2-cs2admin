@@ -181,14 +181,14 @@ internal sealed class AdminActionService
     public bool Unsilence(AdminActor actor, IPlayer target, string reason)
         => _comms.Unsilence(actor, target, reason);
 
-    public bool Ban(AdminActor actor, IPlayer target, TimeSpan? duration, string reason)
-        => _bans.Ban(actor, target, duration, reason);
+    public Task<bool> BanAsync(AdminActor actor, IPlayer target, TimeSpan? duration, string reason)
+        => _bans.BanAsync(actor, target, duration, reason);
 
-    public bool AddBan(AdminActor actor, ulong steamId, string playerName, TimeSpan? duration, string reason)
-        => _bans.AddBan(actor, steamId, playerName, duration, reason);
+    public Task<bool> AddBanAsync(AdminActor actor, ulong steamId, string playerName, TimeSpan? duration, string reason)
+        => _bans.AddBanAsync(actor, steamId, playerName, duration, reason);
 
-    public bool Unban(AdminActor actor, ulong steamId, string reason)
-        => _bans.Unban(actor, steamId, reason);
+    public Task<bool> UnbanAsync(AdminActor actor, ulong steamId, string reason)
+        => _bans.UnbanAsync(actor, steamId, reason);
 
     public void CleanupPlayer(int playerId)
     {

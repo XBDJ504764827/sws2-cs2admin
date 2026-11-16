@@ -1,3 +1,4 @@
+using Microsoft.Extensions.Logging;
 using SwiftlyS2.Shared.Commands;
 using SwiftlyS2.Shared.Players;
 using SwiftlyS2.Shared.Translation;
@@ -192,7 +193,7 @@ public partial class Sws2Cs2Admin
         ParseDurationAndReason(context.Args, 1, _settings.Bans.DefaultDurationMinutes, out var duration, out var reason);
         foreach (var target in targets)
         {
-            _actions.Ban(actor, target, duration, reason);
+            _ = _actions.BanAsync(actor, target, duration, reason);
         }
     }
 
@@ -215,7 +216,7 @@ public partial class Sws2Cs2Admin
 
         ParseDurationAndReason(context.Args, 1, _settings.Bans.DefaultDurationMinutes, out var duration, out var reason);
         var online = Core.PlayerManager.GetPlayerFromSteamId(steamId);
-        _actions.AddBan(actor, steamId, online?.Name ?? steamId.ToString(), duration, reason);
+        _ = _actions.AddBanAsync(actor, steamId, online?.Name ?? steamId.ToString(), duration, reason);
     }
 
     [Command("unban", false, "", "Lift a ban")]
@@ -235,7 +236,7 @@ public partial class Sws2Cs2Admin
             return;
         }
 
-        _actions.Unban(actor, steamId, JoinArgs(context.Args, 1));
+        _ = _actions.UnbanAsync(actor, steamId, JoinArgs(context.Args, 1));
     }
 
     [Command("listbans", false, "", "List recent bans")]
@@ -269,26 +270,33 @@ public partial class Sws2Cs2Admin
             }
         }
 
-        var records = _bans.Store.History(steamId, 10);
-        if (records.Count == 0)
-        {
-            Reply(context, localizer, "cs2admin.ban.list.none");
-            return;
-        }
+        var query = new BanQuery(Status: BanStatus.All, SteamId: steamId);
+        _ = ListBanHistoryAsync(actor, query);
+    }
 
-        Reply(context, localizer, "cs2admin.ban.list.header");
-        foreach (var record in records)
+    private async Task ListBanHistoryAsync(AdminActor actor, BanQuery query)
+    {
+        try
         {
-            Reply(
-                context,
-                localizer,
-                "cs2admin.ban.list.entry",
-                record.PlayerName,
-                record.SteamId,
-                record.Reason,
-                localizer[record.IsActive(DateTimeOffset.UtcNow) ? "cs2admin.ban.active" : "cs2admin.ban.inactive"],
-                record.ExpiresAt?.ToLocalTime().ToString("yyyy-MM-dd HH:mm") ?? localizer["cs2admin.duration.permanent"]);
+            var page = await _bans.Store.QueryAsync(query, 0, 10).ConfigureAwait(false);
+            Core.Scheduler.NextTick(() =>
+            {
+                if (!_loaded || !IsCurrentActor(actor)) return;
+                var localizer = actor.Player is null ? Core.Localizer : Core.Translation.GetPlayerLocalizer(actor.Player);
+                void Send(string message)
+                {
+                    if (actor.Player is null) Core.Logger.LogInformation("[sws2-cs2admin] {Message}", message);
+                    else actor.Player.SendChat($"{localizer["cs2admin.prefix"]} {message}");
+                }
+                if (page.Total == 0) { Send(localizer["cs2admin.ban.list.none"]); return; }
+                Send(localizer["cs2admin.ban.list.header"]);
+                foreach (var record in page.Records)
+                    Send(localizer["cs2admin.ban.list.entry", record.PlayerName, record.SteamId, record.Reason,
+                        localizer[record.IsActive(DateTimeOffset.UtcNow) ? "cs2admin.ban.active" : "cs2admin.ban.inactive"],
+                        record.ExpiresAt?.ToLocalTime().ToString("yyyy-MM-dd HH:mm") ?? localizer["cs2admin.duration.permanent"]]);
+            });
         }
+        catch (Exception exception) { Core.Logger.LogError(exception, "[sws2-cs2admin] Ban history query failed"); }
     }
 
     [Command("who", false, "", "List online admins")]
@@ -376,7 +384,7 @@ public partial class Sws2Cs2Admin
         {
             "admin", "kick", "slay", "slap", "respawn", "freeze",
             "mute", "unmute", "gag", "ungag", "silence", "unsilence",
-            "ban", "addban", "unban", "listbans", "who", "reloadadmins"
+            "ban", "addban", "unban", "listbans", "bans", "who", "reloadadmins"
         })
         {
             Reply(context, localizer, "cs2admin.help.entry", command);

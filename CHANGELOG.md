@@ -4,6 +4,14 @@ All notable changes to this project are documented in this file.
 
 ## [Unreleased]
 
+### SQLite ban management and shared map pictures
+
+- Persist bans in SQLite with transactional legacy JSON import and preserved backups.
+- Search offline records by SteamID/name, status, administrator and UTC date range; fetch bounded pages asynchronously.
+- Add Ban management to the sidebar with details, reason selection and confirmed unban; retain history and reject stale confirmations.
+- Commit before success, update the active join cache only after persistence, and drain pending writes at shutdown.
+- Share `!yd` thumbnails and CKZ/VNL NUB/PRO badges in administrator Map management.
+
 ### NUB / PRO ratings
 
 - Show separate CKZ NUB/PRO and VNL NUB/PRO ratings in the text-only map list.

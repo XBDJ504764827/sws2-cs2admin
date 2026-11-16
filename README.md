@@ -16,7 +16,8 @@
 - Optional permission nodes from SwiftlyS2's `permissions.jsonc`
 - Player actions: kick, slay, slap, respawn and freeze
 - Communication controls: mute, gag, silence and their removals
-- Persistent bans with temporary/permanent durations and offline `addban`
+- SQLite bans with temporary/permanent durations, offline `addban` and automatic JSON migration
+- Searchable, paginated ban management with confirmed unban and retained history
 - Join ban checks
 - JSONL audit logging for successful and denied admin actions
 - Admin panel built on the shared [`sws2-cs2menus`](https://github.com/XBDJ504764827/sws2-cs2menus) service
@@ -45,12 +46,17 @@ csgo/addons/swiftlys2/plugins/
     ├── Sws2Cs2Admin.Contracts.dll
     ├── Sws2Cs2Menus.Contracts.dll
     ├── Sws2Cs2MapManager.Contracts.dll
+    ├── Microsoft.Data.Sqlite.dll
+    ├── SQLitePCLRaw.*.dll
+    ├── runtimes/                 # include SQLite native libraries
     └── resources/
         ├── exports/Sws2Cs2Admin.Contracts.dll
         ├── templates/config.template.jsonc
         ├── templates/admins.template.jsonc
         └── translations/
 ```
+
+Keep all archive files, including `runtimes/` and the `.deps.json` file; copying only the main DLL is insufficient. No database server installation is required.
 
 3. Install `sws2-cs2menus` and `sws2-cs2mapmanager` as well, then start or reload the server. Load the shared service plugins before `sws2-cs2admin`.
 
@@ -66,8 +72,8 @@ Add your SteamID and groups to `admins.jsonc`, then run `!reloadadmins` or reloa
 
 ## Map administration
 
-`!admin` opens a text-only Custom HUD with persistent **Player actions** and
-**Map management** categories on the left. The right pane shows online players,
+`!admin` opens a Custom HUD with persistent **Player actions**,
+**Map management** and **Ban management** categories on the left. The right pane shows online players,
 actions, configured maps and confirmations. The first permitted category is
 selected automatically; selecting a category again refreshes its list. Kicks and bans require confirmation. Update the companion
 `sws2-cs2menus` Panorama Workshop addon as well as both plugin DLLs; see the menus
@@ -197,7 +203,8 @@ Console commands use the `sw_` prefix. The permission column omits the `sws2.adm
 | `!ban <target> [duration] [reason]` | `sw_ban` | `ban` | Ban an online player |
 | `!addban <steamid> [duration] [reason]` | `sw_addban` | `ban` | Ban a SteamID offline or online |
 | `!unban <steamid> [reason]` | `sw_unban` | `unban` | Lift a ban |
-| `!listbans [steamid\|name]` | `sw_listbans` | `bans.view` | Show recent bans |
+| `!listbans [steamid\|name]` | `sw_listbans` | `bans.view` | Show up to 10 recent ban records |
+| `!bans [name/SteamID] [filters]` | `sw_bans` | `bans.view` | Search SQLite history and open ban management |
 | `!who [target]` | `sw_who` | `who` | Show online admins or one admin |
 | `!reloadadmins` | `sw_reloadadmins` | `reload` | Reload `admins.jsonc` |
 | `!adminhelp` | `sw_adminhelp` | none | List admin commands |
@@ -226,12 +233,54 @@ Runtime data is stored in:
 
 ```
 csgo/addons/swiftlys2/data/sws2-cs2admin/
-├── bans.json
+├── bans.db
+├── bans.json.pre-sqlite.bak  # created when importing legacy bans.json
 ├── comms.json
 └── audit-YYYY-MM-DD.log
 ```
 
 Audit entries are JSON lines containing timestamp, action, success, actor, target and details. Old daily files are removed according to `Audit.RetentionDays`.
+
+### SQLite bans and migration
+
+On first load, the plugin imports the old `bans.json` into `bans.db` in one transaction.
+It preserves the original JSON and a byte-identical `bans.json.pre-sqlite.bak`.
+A database marker prevents duplicate imports on restart. Invalid JSON or a failed import
+stops initialization so existing bans cannot silently disappear. After migration,
+**SQLite is the source of truth**; editing `bans.json` no longer changes bans.
+Do not restore the old JSON as a rollback after issuing new bans/unbans.
+`comms.json` continues to store communication restrictions.
+
+Runtime queries/writes run off the game thread. Join checks use an active-ban cache;
+success is reported only after the database commits. History is retained after expiry
+or unban and pages are fetched with SQL limits, rather than loading all history into HUD.
+The database is local to this server; it does not synchronize bans across servers.
+
+Back up after stopping the server, or use SQLite's online backup API / `.backup` command.
+Do not copy only `bans.db` while it is open: WAL may contain committed changes.
+
+### Find and lift a permanent ban
+
+Open `!admin` → **Ban management**, choose a status, open the player record,
+select **Unban**, choose a reason and confirm the name/SteamID. Each database page
+contains at most three records plus previous/next controls. Expired/revoked records
+remain viewable. Unban requires `sws2.admin.unban`; browsing requires `sws2.admin.bans.view`.
+An old confirmation cannot lift a newer ban issued for the same SteamID.
+
+Use chat commands to search offline players and combine filters:
+
+```text
+!bans Alice --status=all
+!bans 76561198000000001 --status=permanent
+!bans --admin=XBDJ --from=2026-11-01 --to=2026-11-16
+!unban 76561198000000001 Appeal approved
+```
+
+Status values: `active` (default), `permanent`, `temporary`, `expired`, `revoked`, `all`.
+Names support case-insensitive literal substring matching; SteamIDs match exactly.
+`--admin` accepts a name or SteamID. Dates filter creation time in UTC, inclusive of
+the entire `--to` day; detail times use the server's local time zone. Server console
+queries print up to ten matching records. No player needs to be online for unban.
 
 ## For other plugins
 
@@ -319,4 +368,4 @@ No manual version editing is required. The value committed in `src/VersionInfo.c
 
 [MIT](LICENSE)
 
-Map lists display independent CKZ NUB/PRO and VNL NUB/PRO ratings from mapmanager (nested `NUB` / `PRO` under `CKZ` and `VNL` in each map object). NUB means checkpoints (存点); PRO means no checkpoints (裸跳). Unknown categories are labeled separately. Update all shared contract consumers together when upgrading; the administrator HUD stays text-only.
+Map lists display independent CKZ NUB/PRO and VNL NUB/PRO ratings from mapmanager (nested `NUB` / `PRO` under `CKZ` and `VNL` in each map object). NUB means checkpoints (存点); PRO means no checkpoints (裸跳). Unknown categories are labeled separately. Update all shared contract consumers together when upgrading; admin Map management and `!yd` share the MapPicker renderer, stable map IDs, packaged screenshots and all four rating badges. Other administrator pages remain text-only; no decorative icons are added.

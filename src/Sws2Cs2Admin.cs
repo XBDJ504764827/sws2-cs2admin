@@ -59,7 +59,7 @@ public partial class Sws2Cs2Admin : BasePlugin
         _admins.Reload();
 
         _audit = new AuditLogger(Core, _settings.Audit);
-        var banStore = new BanStore(Core);
+        var banStore = new BanStore(Core.PluginDataDirectory, Core.Logger);
         _bans = new BanService(Core, banStore, _admins, _audit, _settings);
         var commStore = new CommStore(Core);
         _comms = new CommService(Core, commStore, _admins, _audit, _settings);
@@ -158,6 +158,8 @@ public partial class Sws2Cs2Admin : BasePlugin
 
         _mapManager = null;
         _actions?.Reset();
+        _bans?.Stop();
+        _banRequests.Clear();
         _comms?.Dispose();
         _admins?.Shutdown();
         _audit?.Dispose();

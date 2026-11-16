@@ -22,6 +22,8 @@
     <PackageReference Include="SwiftlyS2.CS2" Version="*" ExcludeAssets="runtime" PrivateAssets="all" />
     <!-- Pins the transitive MySqlConnector pulled in by SwiftlyS2.CS2 to a version without
          GHSA-473q-m89c-ghf8. The host still ships its own copy at runtime. -->
+    <PackageReference Include="Microsoft.Data.Sqlite" Version="10.0.0" />
+    <PackageReference Include="SQLitePCLRaw.bundle_e_sqlite3" Version="2.1.14" />
     <PackageReference Include="MySqlConnector" Version="2.6.2" ExcludeAssets="runtime" PrivateAssets="all" />
   </ItemGroup>
 
@@ -49,6 +51,7 @@
     <Compile Remove="sws2-cs2menus\**\*.cs" />
     <Compile Remove="sws2-cs2mapmanager\**\*.cs" />
     <Compile Remove="examples\**\*.cs" />
+    <Compile Remove="tests\**\*.cs" />
   </ItemGroup>
 
   <Target Name="PrepareContracts">
