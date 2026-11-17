@@ -74,6 +74,13 @@ jobs:
           ref: develop
           path: sws2-cs2menus
 
+      - name: Checkout map manager contracts
+        uses: actions/checkout@v4
+        with:
+          repository: XBDJ504764827/sws2-cs2mapmanager
+          ref: develop
+          path: sws2-cs2mapmanager
+
       - name: Setup .NET
         uses: actions/setup-dotnet@v4
         with:
@@ -83,6 +90,9 @@ jobs:
 
       - name: Restore dependencies
         run: dotnet restore sws2-cs2admin.csproj
+
+      - name: Run BanChecks regression checks
+        run: dotnet run --project tests/BanChecks/BanChecks.csproj -c Release
 
       - name: Verify formatting and analyzers
         run: dotnet format sws2-cs2admin.sln --verify-no-changes --no-restore --severity warn

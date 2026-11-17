@@ -17,6 +17,7 @@
       "Immunity": 50,
       "Permissions": [
         "sws2.admin.menu",
+        "sws2.admin.spectate",
         "sws2.admin.kick",
         "sws2.admin.slay",
         "sws2.admin.slap",

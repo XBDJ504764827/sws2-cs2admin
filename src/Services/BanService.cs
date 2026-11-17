@@ -20,6 +20,15 @@ internal sealed class BanService
     private readonly AdminService _admins;
     private readonly AuditLogger _audit;
     private AdminSettings _settings;
+    private volatile bool _stopped;
+    private readonly CancellationTokenSource _shutdown = new();
+
+    public void Stop()
+    {
+        _stopped = true;
+        _shutdown.Cancel();
+        _store.DrainWrites();
+    }
 
     public BanService(
         ISwiftlyCore core,
@@ -82,31 +91,31 @@ internal sealed class BanService
         return true;
     }
 
-    public bool Ban(AdminActor actor, IPlayer target, TimeSpan? duration, string reason)
+    public Task<bool> BanAsync(AdminActor actor, IPlayer target, TimeSpan? duration, string reason)
     {
         if (!CheckPermission(actor, AdminPermissions.Ban, out var localizer))
         {
-            return false;
+            return Task.FromResult(false);
         }
 
         if (!_admins.CanTarget(actor, target))
         {
             Reply(actor, localizer["cs2admin.action.immunity", target.Name]);
             _audit.Log(actor, "ban.denied", target.SteamID, target.Name, "Target immunity", success: false);
-            return false;
+            return Task.FromResult(false);
         }
 
         if (actor.SteamId != 0 && actor.SteamId == target.SteamID)
         {
             Reply(actor, localizer["cs2admin.action.self"]);
-            return false;
+            return Task.FromResult(false);
         }
 
         var existing = _store.FindActive(target.SteamID);
         if (existing != null)
         {
             Reply(actor, localizer["cs2admin.ban.already", target.Name, FormatDuration(existing.ExpiresAt is null ? null : existing.ExpiresAt - DateTimeOffset.UtcNow, localizer)]);
-            return false;
+            return Task.FromResult(false);
         }
 
         duration = ClampDuration(duration);
@@ -121,28 +130,27 @@ internal sealed class BanService
             ExpiresAt = duration.HasValue ? DateTimeOffset.UtcNow + duration.Value : null
         };
 
-        _store.Add(record);
-        return ApplyBan(actor, target, record, localizer);
+        return PersistBanAsync(actor, record);
     }
 
-    public bool AddBan(AdminActor actor, ulong steamId, string playerName, TimeSpan? duration, string reason)
+    public Task<bool> AddBanAsync(AdminActor actor, ulong steamId, string playerName, TimeSpan? duration, string reason)
     {
         if (!CheckPermission(actor, AdminPermissions.Ban, out var localizer))
         {
-            return false;
+            return Task.FromResult(false);
         }
 
         if (steamId == 0)
         {
             Reply(actor, localizer["cs2admin.target.invalid"]);
-            return false;
+            return Task.FromResult(false);
         }
 
         var existing = _store.FindActive(steamId);
         if (existing != null)
         {
             Reply(actor, localizer["cs2admin.ban.already", playerName, FormatDuration(existing.ExpiresAt is null ? null : existing.ExpiresAt - DateTimeOffset.UtcNow, localizer)]);
-            return false;
+            return Task.FromResult(false);
         }
 
         var target = _core.PlayerManager.GetPlayerFromSteamId(steamId);
@@ -150,7 +158,7 @@ internal sealed class BanService
         {
             Reply(actor, localizer["cs2admin.action.immunity", target.Name]);
             _audit.Log(actor, "ban.denied", target.SteamID, target.Name, "Target immunity", success: false);
-            return false;
+            return Task.FromResult(false);
         }
 
         duration = ClampDuration(duration);
@@ -165,70 +173,78 @@ internal sealed class BanService
             ExpiresAt = duration.HasValue ? DateTimeOffset.UtcNow + duration.Value : null
         };
 
-        _store.Add(record);
-        _audit.Log(
-            actor,
-            "ban.add",
-            record.SteamId,
-            record.PlayerName,
-            $"duration={FormatDuration(duration, localizer)}; reason={record.Reason}");
-
-        Reply(actor, localizer["cs2admin.ban.success", record.PlayerName, record.SteamId, FormatDuration(duration, localizer), record.Reason]);
-        AnnounceBan(actor, record, localizer);
-
-        if (target is { IsValid: true })
-        {
-            KickBanned(target, record, localizer);
-        }
-
-        return true;
+        return PersistBanAsync(actor, record);
     }
 
-    public bool Unban(AdminActor actor, ulong steamId, string reason)
+    private async Task<bool> PersistBanAsync(AdminActor actor, BanRecord record)
     {
+        try
+        {
+            var added = await _store.AddAsync(record).ConfigureAwait(false);
+            return await OnGameThread(() =>
+            {
+                var localizer = LocalizerFor(actor);
+                if (!added)
+                {
+                    Reply(actor, localizer["cs2admin.ban.already", record.PlayerName, "-"]);
+                    return false;
+                }
+                _audit.Log(actor, "ban.add", record.SteamId, record.PlayerName,
+                    $"duration={FormatDuration(record.ExpiresAt is null ? null : record.ExpiresAt - DateTimeOffset.UtcNow, localizer)}; reason={record.Reason}");
+                Reply(actor, localizer["cs2admin.ban.success", record.PlayerName, record.SteamId,
+                    FormatDuration(record.ExpiresAt is null ? null : record.ExpiresAt - DateTimeOffset.UtcNow, localizer), record.Reason]);
+                AnnounceBan(actor, record, localizer);
+                var online = _core.PlayerManager.GetPlayerFromSteamId(record.SteamId);
+                if (online is { IsValid: true } && _store.FindActive(record.SteamId)?.Id == record.Id) KickBanned(online, record, localizer);
+                return true;
+            }).ConfigureAwait(false);
+        }
+        catch (Exception exception)
+        {
+            _logger.LogError(exception, "[sws2-cs2admin] Failed to persist ban; no success was reported");
+            return await OnGameThread(() => { Reply(actor, LocalizerFor(actor)["cs2admin.ban.storage_failed"]); return false; }).ConfigureAwait(false);
+        }
+    }
+
+    public async Task<bool> UnbanAsync(AdminActor actor, ulong steamId, string reason, Guid? expectedId = null)
+    {
+        // Called on the game thread before yielding to the database worker.
         if (!_settings.Bans.AllowUnban)
         {
             Reply(actor, _core.Localizer["cs2admin.unban.disabled"]);
             return false;
         }
-
-        if (!CheckPermission(actor, AdminPermissions.Unban, out var localizer))
+        if (!CheckPermission(actor, AdminPermissions.Unban, out var localizer)) return false;
+        if (string.IsNullOrWhiteSpace(reason)) reason = localizer["cs2admin.ban.no_reason"];
+        try
         {
-            return false;
+            var record = await _store.RevokeAsync(steamId, actor.Name, reason, expectedId).ConfigureAwait(false);
+            return await OnGameThread(() =>
+            {
+                if (record is null) { Reply(actor, localizer["cs2admin.unban.none", steamId]); return false; }
+                _audit.Log(actor, "ban.remove", steamId, record.PlayerName, reason);
+                Reply(actor, localizer["cs2admin.unban.success", record.PlayerName, steamId]);
+                return true;
+            }).ConfigureAwait(false);
         }
-
-        var record = _store.FindActive(steamId);
-        if (record is null)
+        catch (Exception exception)
         {
-            Reply(actor, localizer["cs2admin.unban.none", steamId]);
-            return false;
+            _logger.LogError(exception, "[sws2-cs2admin] Failed to persist unban");
+            return await OnGameThread(() => { Reply(actor, localizer["cs2admin.ban.storage_failed"]); return false; }).ConfigureAwait(false);
         }
-
-        _store.Revoke(steamId, actor.Name, reason);
-        _audit.Log(
-            actor,
-            "ban.remove",
-            steamId,
-            record.PlayerName,
-            string.IsNullOrWhiteSpace(reason) ? "No reason" : reason);
-
-        Reply(actor, localizer["cs2admin.unban.success", record.PlayerName, steamId]);
-        return true;
     }
 
-    private bool ApplyBan(AdminActor actor, IPlayer target, BanRecord record, ILocalizer localizer)
+    private async Task<bool> OnGameThread(Func<bool> action)
     {
-        _audit.Log(
-            actor,
-            "ban.add",
-            record.SteamId,
-            record.PlayerName,
-            $"duration={FormatDuration(record.ExpiresAt is null ? null : record.ExpiresAt - DateTimeOffset.UtcNow, localizer)}; reason={record.Reason}");
-
-        Reply(actor, localizer["cs2admin.ban.success", record.PlayerName, record.SteamId, FormatDuration(record.ExpiresAt is null ? null : record.ExpiresAt - DateTimeOffset.UtcNow, localizer), record.Reason]);
-        AnnounceBan(actor, record, localizer);
-        KickBanned(target, record, localizer);
-        return true;
+        if (_stopped) return false;
+        var completion = new TaskCompletionSource<bool>(TaskCreationOptions.RunContinuationsAsynchronously);
+        using var registration = _shutdown.Token.Register(() => completion.TrySetResult(false));
+        _core.Scheduler.NextTick(() =>
+        {
+            try { completion.TrySetResult(!_stopped && action()); }
+            catch (Exception exception) { completion.TrySetException(exception); }
+        });
+        return await completion.Task.ConfigureAwait(false);
     }
 
     private void KickBanned(IPlayer target, BanRecord record, ILocalizer adminLocalizer)
@@ -274,9 +290,8 @@ internal sealed class BanService
     {
         if (duration is null)
         {
-            return _settings.Bans.DefaultDurationMinutes > 0
-                ? TimeSpan.FromMinutes(_settings.Bans.DefaultDurationMinutes)
-                : null;
+            // The command parser already supplies the configured default. Explicit null means permanent.
+            return null;
         }
 
         if (_settings.Bans.MaxDurationMinutes > 0
@@ -309,12 +324,13 @@ internal sealed class BanService
 
     private ILocalizer LocalizerFor(AdminActor actor)
     {
-        return actor.Player != null ? _core.Translation.GetPlayerLocalizer(actor.Player) : _core.Localizer;
+        return actor.Player is { IsValid: true } player && player.SteamID == actor.SteamId
+            ? _core.Translation.GetPlayerLocalizer(player) : _core.Localizer;
     }
 
     private void Reply(AdminActor actor, string message)
     {
-        if (actor.Player != null)
+        if (actor.Player is { IsValid: true } && actor.Player.SteamID == actor.SteamId)
         {
             actor.Player.SendChat($"{_core.Translation.GetPlayerLocalizer(actor.Player)["cs2admin.prefix"]} {message}");
         }

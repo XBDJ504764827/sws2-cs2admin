@@ -22,11 +22,13 @@ public partial class Sws2Cs2Admin
     private void OnClientDisconnected(IOnClientDisconnectedEvent @event)
     {
         _actions.CleanupPlayer(@event.PlayerId);
+        _banRequests.Remove(@event.PlayerId);
     }
 
     private void OnMapUnload(IOnMapUnloadEvent @event)
     {
         _actions.Reset();
+        _banRequests.Clear();
     }
 
     private HookResult OnPlayerSpawn(EventPlayerSpawn @event)
